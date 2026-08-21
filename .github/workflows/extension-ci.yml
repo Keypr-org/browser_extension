@@ -30,3 +30,16 @@ jobs:
 
       - name: Build
         run: npm run build
+
+      - name: Create ZIP file
+        run: |
+          test -f dist/manifest.json
+          cd dist
+          zip -r ../chrome-extension.zip .
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: chrome-extension
+          path: chrome-extension.zip
+          if-no-files-found: error
