@@ -60,6 +60,7 @@ jobs:
         with:
           extension-id: ${{ secrets.EXTENSION_ID }}
           zip-path: chrome-extension.zip
+          publisher-id: ${{ secrets.PUBLISHER_ID }}
           client-id: ${{ secrets.CHROME_CLIENT_ID }}
           client-secret: ${{ secrets.CHROME_CLIENT_SECRET }}
           refresh-token: ${{ secrets.CHROME_REFRESH_TOKEN }}
