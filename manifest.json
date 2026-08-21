@@ -1,7 +1,7 @@
 {
     "manifest_version": 3,
     "name": "Keypr",
-    "version": "0.1.0",
+    "version": "0.1.1",
     "description": "Extension Chrome pour notre gestionnaire de mots de passe",
     "background": {
         "service_worker": "background/service-worker.js"
