@@ -43,3 +43,24 @@ jobs:
           name: chrome-extension
           path: chrome-extension.zip
           if-no-files-found: error
+
+  update-extension:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: test-and-build
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Download extension artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: chrome-extension
+
+      - name: Upload Chrome extension
+        uses: wdzeng/chrome-extension@v2
+        with:
+          extension-id: ${{ secrets.EXTENSION_ID }}
+          zip-path: chrome-extension.zip
+          client-id: ${{ secrets.CHROME_CLIENT_ID }}
+          client-secret: ${{ secrets.CHROME_CLIENT_SECRET }}
+          refresh-token: ${{ secrets.CHROME_REFRESH_TOKEN }}
+          action: upload
