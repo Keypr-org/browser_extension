@@ -3,9 +3,9 @@
 
 ## How to install the browser extension (localy)
 
-1. Clone the repo `git clone <...>`
+1. Clone the repo `git clone https://github.com/Keypr-org/browser_extension.git`
 2. Run the build command using `npm run build`
-3. Go to `chrome://extensions`
+3. Paste this URL in your search bar `chrome://extensions`
 4. Enable `Developer Mode`
 5. Click the `Charger l'extension non empaquetée` button
 6. Select the `dist` file that was created after the build command
