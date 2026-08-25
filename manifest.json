@@ -3,23 +3,18 @@
     "name": "Keypr",
     "version": "0.1.0",
     "description": "Extension Chrome pour notre gestionnaire de mots de passe",
-    "background": {
-        "service_worker": "background/service-worker.js"
+    "icons": {
+        "16": "img/icons/icon16.png",
+        "32": "img/icons/icon32.png",
+        "48": "img/icons/icon48.png",
+        "128": "img/icons/icon128.png"
     },
-    "content_scripts": [
-        {
-            "matches": [
-                "http://*/*",
-                "https://*/*"
-            ],
-            "js": [
-                "content/content-script.js"
-            ]
-        }
+    "background": {
+        "service_worker": "background/service-worker.js",
+        "type": "module"
+    },
+    "permissions": [
+        "activeTab"
     ],
-    "permissions": [],
-    "action": {
-        "default_popup": "popup/popup.html",
-        "default_icon": "img/keypr.png"
-    }
+    "action": {}
 }

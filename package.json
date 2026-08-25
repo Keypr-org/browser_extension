@@ -8,7 +8,7 @@
     "vitest": "^4.1.11"
   },
   "scripts": {
-    "build": "tsc && cp manifest.json dist/manifest.json",
+    "build": "npm run clean && tsc && cp manifest.json dist/manifest.json && cp -r src/popup dist/popup && cp -r src/img dist/img",
     "clean": "rm -rf dist",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
