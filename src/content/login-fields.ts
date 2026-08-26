@@ -3,7 +3,7 @@ export interface LoginFields {
     password?: HTMLInputElement;
 }
 
-export function findPasswordField(): HTMLInputElement | undefined {
+function findPasswordField(): HTMLInputElement | undefined {
     const passwordFields = Array.from(
         document.querySelectorAll<HTMLInputElement>(
             'input[type="password"]'
@@ -15,7 +15,7 @@ export function findPasswordField(): HTMLInputElement | undefined {
     );
 }
 
-export function scoreUsernameField(field: HTMLInputElement): number {
+function scoreUsernameField(field: HTMLInputElement): number {
     let score = 0;
 
     const autocomplete = field.autocomplete.toLowerCase();
@@ -71,7 +71,7 @@ export function scoreUsernameField(field: HTMLInputElement): number {
     return score;
 }
 
-export function findUsernameField(): HTMLInputElement | undefined {
+function findUsernameField(): HTMLInputElement | undefined {
     const fields = Array.from(
         document.querySelectorAll<HTMLInputElement>(
             'input:not([type="password"])'
