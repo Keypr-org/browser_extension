@@ -14,3 +14,46 @@ export interface LoginFieldsDetectedMessage {
         password?: FieldDescriptor;
     };
 }
+
+export interface GetEntriesMessage {
+    type: "GET_ENTRIES";
+    url: string;
+}
+
+export interface GetPasswordMessage {
+    type: "GET_PASSWORD";
+    id: number;
+    url: string;
+    username: string;
+}
+
+export interface Entry {
+    id: number;
+    url: string;
+    username: string;
+}
+
+export interface EntriesMessage {
+    type: "ENTRIES";
+    entries: Entry[];
+}
+
+export interface PasswordMessage {
+    type: "PASSWORD";
+    id: number;
+    url: string;
+    username: string;
+    password: string;
+}
+
+export interface ErrorMessage {
+    type: "ERROR";
+    code: string;
+}
+
+export type NativeMessage =
+    | GetEntriesMessage
+    | GetPasswordMessage
+    | EntriesMessage
+    | PasswordMessage
+    | ErrorMessage;
