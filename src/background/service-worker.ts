@@ -15,6 +15,8 @@ chrome.action.onClicked.addListener(async (tab) => {
         return;
     }
 
+    // Get the fields location
+
     await chrome.scripting.executeScript({
         target: {
             tabId: tab.id,
@@ -22,6 +24,19 @@ chrome.action.onClicked.addListener(async (tab) => {
         },
         files: ["content/login-fields.js"]
     });
+    
+    // If there aren't any field location then popup should show a message indicating 'no credentials'
+
+    // Ask via native messaging the entries for said URL to the client-server
+
+    // parseJson the message
+
+    // Send the entries to the popup to display all the entries inside the popup as buttons
+
+    // If user clicks on a button entry, send json informations of the entry pressed with type 'GET_PASSWORD'
+
+    // Receive json 'PASSWORD' and parse it
+
     
 });
 

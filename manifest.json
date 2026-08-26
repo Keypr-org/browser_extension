@@ -17,5 +17,7 @@
         "activeTab",
         "scripting"
     ],
-    "action": {}
+    "action": {
+        "default_popup": "popup/popup.html"
+    }
 }

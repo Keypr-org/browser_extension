@@ -1,3 +1,5 @@
+// Login fields messages
+
 export interface FieldDescriptor {
     type: string;
     class: string;
@@ -14,6 +16,8 @@ export interface LoginFieldsDetectedMessage {
         password?: FieldDescriptor;
     };
 }
+
+// Json messages
 
 export interface GetEntriesMessage {
     type: "GET_ENTRIES";
