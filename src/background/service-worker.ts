@@ -17,7 +17,8 @@ chrome.action.onClicked.addListener(async (tab) => {
 
     await chrome.scripting.executeScript({
         target: {
-            tabId: tab.id
+            tabId: tab.id,
+            allFrames: true
         },
         files: ["content/login-fields.js"]
     });

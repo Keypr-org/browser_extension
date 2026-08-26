@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { findLoginFields } from "../../src/content/login-fields.js"
 
 describe("findLoginFields", () => {
@@ -195,5 +195,49 @@ describe("findLoginFields", () => {
     
         expect(fields.username?.autocomplete)
             .toBe("username");
+    });
+
+    it("does not detect credentials inside an iframe", () => {
+        const iframe = document.createElement("iframe");
+    
+        document.body.appendChild(iframe);
+    
+        const iframeDocument = iframe.contentDocument;
+    
+        expect(iframeDocument).not.toBeNull();
+    
+        iframeDocument!.body.innerHTML = `
+            <form>
+                <input type="email" name="email">
+                <input type="password" name="password">
+            </form>
+        `;
+    
+        const fields = findLoginFields();
+    
+        expect(fields.username).toBeUndefined();
+        expect(fields.password).toBeUndefined();
+    });
+
+    it("detects credentials inside an iframe", () => {
+        const iframe = document.createElement("iframe");
+        document.body.appendChild(iframe);
+
+        const iframeDocument = iframe.contentDocument;
+        expect(iframeDocument).not.toBeNull();
+
+        iframeDocument!.body.innerHTML = `
+            <input type="email" name="email">
+            <input type="password" name="password">
+        `;
+
+        vi.stubGlobal("document", iframeDocument);
+
+        const fields = findLoginFields();
+
+        expect(fields.username).toBeDefined();
+        expect(fields.password).toBeDefined();
+
+        vi.unstubAllGlobals();
     });
 });
