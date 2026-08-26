@@ -1,22 +1,33 @@
-import { getUrlFromTab } from "../utils/get-url-from-tab.js";
+import { getEntries } from "../mock/mock-client.js";
+import type { Entry, LoginFieldsDetectedMessage, GetEntriesMessage, TabInfo } from "../utils/messages.js";
 
-chrome.action.onClicked.addListener(async (tab) => {
-    const url = getUrlFromTab(tab);
-
-    if (url === undefined) {
-        console.log("No URL available");
-        return;
+chrome.runtime.onMessage.addListener(async (message, sender) => {
+    if (message.type === "GET_ENTRIES") {
+        await handleGetEntries(message);
+    } else if (message.type === "LOGIN_FIELDS_DETECTED") {
+        const tabInfo = await getTabInfo(sender);
+    
+        if (tabInfo === undefined) {
+            return;
+        }
+        handleLoginFieldsDetected(message, tabInfo.url);
     }
+});
 
-    console.log("Current URL:", url);
+async function handleGetEntries(message: GetEntriesMessage): Promise<void> {
+    const [tab] = await chrome.tabs.query({
+        active: true,
+        currentWindow: true
+    });
 
     if (tab.id === undefined) {
         console.log("No tab ID available");
         return;
     }
 
-    // Get the fields location
+    console.log("Current URL:", message.url);
 
+    // Detect fields
     await chrome.scripting.executeScript({
         target: {
             tabId: tab.id,
@@ -24,30 +35,61 @@ chrome.action.onClicked.addListener(async (tab) => {
         },
         files: ["content/login-fields.js"]
     });
-    
-    // If there aren't any field location then popup should show a message indicating 'no credentials'
+}
 
-    // Ask via native messaging the entries for said URL to the client-server
+function handleLoginFieldsDetected(message: LoginFieldsDetectedMessage, url: string): void {
+    console.log("Login fields detected:", message.fields);
 
-    // parseJson the message
+    if (message.fields.username === undefined && message.fields.password === undefined) {
+        console.log("No login fields found");
 
-    // Send the entries to the popup to display all the entries inside the popup as buttons
+        chrome.runtime.sendMessage({
+            type: "ENTRIES",
+            entries: []
+        });
 
-    // If user clicks on a button entry, send json informations of the entry pressed with type 'GET_PASSWORD'
-
-    // Receive json 'PASSWORD' and parse it
-
-    
-});
-
-chrome.runtime.onMessage.addListener((message, sender) => {
-    if (message.type !== "LOGIN_FIELDS_DETECTED") {
         return;
     }
 
-    console.log("Login fields detected:");
-    console.log(message.fields);
+    console.log("Login fields found!");
 
-    console.log("Tab:", sender.tab?.id);
-    console.log("Frame:", sender.frameId);
-});
+    const entries: Entry[] = getEntries(url);
+
+    chrome.runtime.sendMessage({
+        type: "ENTRIES",
+        entries
+    });
+}
+
+async function getTabInfo(sender: chrome.runtime.MessageSender): Promise<TabInfo | undefined> {
+    // Get tab
+    const tabId = sender.tab?.id;
+    if (tabId === undefined) {
+        console.log("No tab ID available");
+        return;
+    }
+    
+    const tab = await chrome.tabs.get(tabId);
+
+    // Get URL
+    const url = tab.url;
+
+    if (!url) {
+        console.log("No URL available");
+        return;
+    }
+
+    // Get frameId
+    const frameId = sender.frameId;
+
+    if (frameId === undefined) {
+        console.log("No frame ID available");
+        return;
+    }
+
+    return {
+        tabId: tabId,
+        url: url,
+        frameId: frameId
+    };
+}

@@ -17,6 +17,17 @@ export interface LoginFieldsDetectedMessage {
     };
 }
 
+export interface TabInfo {
+    tabId: number;
+    url: string;
+    frameId: number;
+}
+
+export interface FrameLoginFields {
+    frameId: number;
+    fields: LoginFieldsDetectedMessage["fields"];
+}
+
 // Json messages
 
 export interface GetEntriesMessage {

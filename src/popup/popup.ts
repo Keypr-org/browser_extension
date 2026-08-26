@@ -1,40 +1,61 @@
-import { getEntries } from "../mock/mock-client.js";
+import { Entry } from "../utils/messages.js";
 
-async function loadEntries(): Promise<void> {
-    const entriesContainer = document.getElementById("entries");
+chrome.runtime.onMessage.addListener((message) => {
+    if (message.type !== "ENTRIES") {
+        return;
+    }
 
-    if (!entriesContainer) {
+    displayEntries(message.entries);
+});
+
+function displayEntries(entries: Entry[]): void {
+    const container = document.getElementById("entries");
+
+    if (!container) {
         throw new Error("Entries container not found");
     }
 
+    container.innerHTML = "";
+
+    if (entries.length === 0) {
+        container.textContent = "No credentials found";
+        return;
+    }
+
+    for (const entry of entries) {
+        const button = document.createElement("button");
+
+        button.textContent = entry.username;
+        button.dataset.entryId = entry.id.toString();
+
+        button.addEventListener("click", () => {
+            chrome.runtime.sendMessage({
+                type: "GET_PASSWORD",
+                id: entry.id,
+                url: currentUrl,
+                username: entry.username
+            });
+        });
+
+        container.appendChild(button);
+    }
+}
+
+async function requestEntries(): Promise<void> {
     const [tab] = await chrome.tabs.query({
         active: true,
         currentWindow: true
     });
 
     if (!tab.url) {
-        entriesContainer.textContent = "No URL available";
+        console.log("No URL available");
         return;
     }
 
-    const entries = getEntries(tab.url);
-
-    for (const entry of entries) {
-        const button = document.createElement("button");
-
-        button.textContent = entry.username;
-
-        button.addEventListener("click", async () => {
-            await chrome.runtime.sendMessage({
-                type: "ENTRY_SELECTED",
-                id: entry.id
-            });
-
-            window.close();
-        });
-
-        entriesContainer.appendChild(button);
-    }
+    chrome.runtime.sendMessage({
+        type: "GET_ENTRIES",
+        url: tab.url
+    });
 }
 
-loadEntries();
+requestEntries();

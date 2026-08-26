@@ -3,12 +3,12 @@ import type { Entry, PasswordMessage } from "../utils/messages.js";
 const entries: Entry[] = [
     {
         id: 1,
-        url: "https://example.com/",
+        url: "https://authenticationtest.com/simpleFormAuth/",
         username: "Bob"
     },
     {
         id: 2,
-        url: "https://example.com/",
+        url: "https://authenticationtest.com/simpleFormAuth/",
         username: "Alice"
     }
 ];
