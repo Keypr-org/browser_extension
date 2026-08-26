@@ -24,3 +24,15 @@ chrome.action.onClicked.addListener(async (tab) => {
     });
     
 });
+
+chrome.runtime.onMessage.addListener((message, sender) => {
+    if (message.type !== "LOGIN_FIELDS_DETECTED") {
+        return;
+    }
+
+    console.log("Login fields detected:");
+    console.log(message.fields);
+
+    console.log("Tab:", sender.tab?.id);
+    console.log("Frame:", sender.frameId);
+});

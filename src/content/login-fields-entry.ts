@@ -1,6 +1,9 @@
-import { findLoginFields } from "./login-fields.js";
+import { createMessageLoginField } from "./login-fields.js";
 
-const fields = findLoginFields();
+const message = createMessageLoginField();
 
-console.log("Username field:", fields.username);
-console.log("Password field:", fields.password);
+if (message.fields.username || message.fields.password) {
+    console.log("Username field:", message.fields.username);
+    console.log("Password field:", message.fields.password);
+    chrome.runtime.sendMessage(message);
+}

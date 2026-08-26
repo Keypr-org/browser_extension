@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { findLoginFields } from "../../src/content/login-fields.js"
+import { findLoginFields } from "../../src/content/login-fields.js";
+import { createMessageLoginField } from "../../src/content/login-fields.js";
 
 describe("findLoginFields", () => {
     beforeEach(() => {
@@ -239,5 +240,48 @@ describe("findLoginFields", () => {
         expect(fields.password).toBeDefined();
 
         vi.unstubAllGlobals();
+    });
+    
+    it("creates a message containing field descriptors", () => {
+        document.body.innerHTML = `
+            <input
+                type="email"
+                class="username-input"
+                name="email"
+                placeholder="Email"
+                id="email"
+                autocomplete="username"
+            >
+            <input
+                type="password"
+                class="password-input"
+                name="password"
+                placeholder="Password"
+                id="password"
+                autocomplete="current-password"
+            >
+        `;
+    
+        expect(createMessageLoginField()).toEqual({
+            type: "LOGIN_FIELDS_DETECTED",
+            fields: {
+                username: {
+                    type: "email",
+                    class: "username-input",
+                    name: "email",
+                    placeholder: "Email",
+                    id: "email",
+                    autocomplete: "username"
+                },
+                password: {
+                    type: "password",
+                    class: "password-input",
+                    name: "password",
+                    placeholder: "Password",
+                    id: "password",
+                    autocomplete: "current-password"
+                }
+            }
+        });
     });
 });
