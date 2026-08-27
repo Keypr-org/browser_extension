@@ -24,7 +24,7 @@ export interface TabInfo {
 }
 
 export interface FrameLoginFields {
-    tab?: TabInfo;
+    tab: TabInfo;
     fields: LoginFieldsDetectedMessage["fields"];
 }
 

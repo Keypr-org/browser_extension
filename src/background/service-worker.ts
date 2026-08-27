@@ -1,8 +1,8 @@
 import { getEntries, getPassword } from "../mock/mock-client.js";
-import type { Entry, LoginFieldsDetectedMessage, GetEntriesMessage,
+import type { Entry, GetEntriesMessage,
     TabInfo, GetPasswordMessage, FillCredentialsMessage, FrameLoginFields} from "../utils/messages.js";
 
-let loginLocation: FrameLoginFields | undefined;
+let loginLocation: FrameLoginFields;
 
 chrome.runtime.onMessage.addListener(async (message, sender) => {
     if (message.type === "GET_ENTRIES") {
@@ -17,8 +17,8 @@ chrome.runtime.onMessage.addListener(async (message, sender) => {
             tab: tabInfo,
             fields: message.fields
         };
-
-        handleLoginFieldsDetected(message, tabInfo.url);
+    } else if (message.type === "SHOW_CREDENTIALS") {
+        await handleLoginFieldsDetected(message.from, sender);
     } else if (message.type === "GET_PASSWORD") {
         await handleGetPassword(message);
     }
@@ -47,16 +47,26 @@ async function handleGetEntries(message: GetEntriesMessage): Promise<void> {
     });
 }
 
-function handleLoginFieldsDetected(message: LoginFieldsDetectedMessage, url: string): void {
-    console.log("Login fields detected:", message.fields);
+async function handleLoginFieldsDetected(from: string, sender: chrome.runtime.MessageSender): Promise<void> {
+    if (loginLocation === undefined) {
+        console.log("No login field location available");
+        return;
+    }
 
-    if (message.fields.username === undefined && message.fields.password === undefined) {
+    console.log("Login fields detected:", loginLocation.fields);
+
+    const usernameField = loginLocation.fields.username;
+    const passwordField = loginLocation.fields.password;
+    const url = loginLocation.tab.url;
+
+    if (usernameField === undefined && passwordField === undefined) {
         console.log("No login fields found");
 
-        chrome.runtime.sendMessage({
+        await sendEntries({
             type: "ENTRIES",
+            from,
             entries: []
-        });
+        }, sender);
 
         return;
     }
@@ -65,9 +75,24 @@ function handleLoginFieldsDetected(message: LoginFieldsDetectedMessage, url: str
 
     const entries: Entry[] = getEntries(url);
 
-    chrome.runtime.sendMessage({
+    await sendEntries({
         type: "ENTRIES",
+        from,
         entries
+    }, sender);
+}
+
+async function sendEntries(message: { type: "ENTRIES"; from: string; entries: Entry[] },
+    sender: chrome.runtime.MessageSender): Promise<void> {
+    const tabId = sender.tab?.id;
+
+    if (tabId !== undefined && sender.frameId !== undefined) {
+        await chrome.tabs.sendMessage(tabId, message, {frameId: sender.frameId});
+        return;
+    }
+
+    await chrome.runtime.sendMessage(message).catch(() => {
+        console.log("No popup is open to receive entries");
     });
 }
 
