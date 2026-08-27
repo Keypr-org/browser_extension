@@ -8,7 +8,7 @@ chrome.runtime.onMessage.addListener((message) => {
     displayEntries(message.entries);
 });
 
-function displayEntries(entries: Entry[]): void {
+async function displayEntries(entries: Entry[]): Promise<void> {
     const container = document.getElementById("entries");
 
     if (!container) {
@@ -22,6 +22,16 @@ function displayEntries(entries: Entry[]): void {
         return;
     }
 
+    const [tab] = await chrome.tabs.query({
+        active: true,
+        currentWindow: true
+    });
+
+    if (!tab.url) {
+        console.log("No URL available");
+        return;
+    }
+
     for (const entry of entries) {
         const button = document.createElement("button");
 
@@ -32,7 +42,7 @@ function displayEntries(entries: Entry[]): void {
             chrome.runtime.sendMessage({
                 type: "GET_PASSWORD",
                 id: entry.id,
-                url: currentUrl,
+                url: tab.url,
                 username: entry.username
             });
         });

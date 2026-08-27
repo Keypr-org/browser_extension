@@ -1,16 +1,26 @@
-import { getEntries } from "../mock/mock-client.js";
-import type { Entry, LoginFieldsDetectedMessage, GetEntriesMessage, TabInfo } from "../utils/messages.js";
+import { getEntries, getPassword } from "../mock/mock-client.js";
+import type { Entry, LoginFieldsDetectedMessage, GetEntriesMessage,
+    TabInfo, GetPasswordMessage, FillCredentialsMessage, FrameLoginFields} from "../utils/messages.js";
+
+let loginLocation: FrameLoginFields | undefined;
 
 chrome.runtime.onMessage.addListener(async (message, sender) => {
     if (message.type === "GET_ENTRIES") {
         await handleGetEntries(message);
     } else if (message.type === "LOGIN_FIELDS_DETECTED") {
         const tabInfo = await getTabInfo(sender);
-    
         if (tabInfo === undefined) {
             return;
         }
+
+        loginLocation = {
+            tab: tabInfo,
+            fields: message.fields
+        };
+
         handleLoginFieldsDetected(message, tabInfo.url);
+    } else if (message.type === "GET_PASSWORD") {
+        await handleGetPassword(message);
     }
 });
 
@@ -59,6 +69,49 @@ function handleLoginFieldsDetected(message: LoginFieldsDetectedMessage, url: str
         type: "ENTRIES",
         entries
     });
+}
+
+async function handleGetPassword(message: GetPasswordMessage): Promise<void> {
+    if (loginLocation === undefined) {
+        console.log("No login field location available");
+        return;
+    }
+
+    const pw = getPassword(message.id);
+
+    if (pw === undefined) {
+        console.log("No password found");
+        return;
+    }
+
+    const messageCred: FillCredentialsMessage = {
+        type: "FILL_CREDENTIALS",
+        username: pw.username,
+        password: pw.password,
+        usernameField: loginLocation.fields.username,
+        passwordField: loginLocation.fields.password
+    };
+
+    if (loginLocation.tab === undefined) {
+        console.log("No tab info");
+        return;
+    }
+
+    await chrome.scripting.executeScript({
+        target: {
+            tabId: loginLocation.tab.tabId,
+            frameIds: [loginLocation.tab.frameId]
+        },
+        files: ["content/fill-credentials.js"]
+    });
+
+    await chrome.tabs.sendMessage(
+        loginLocation.tab.tabId,
+        messageCred,
+        {
+            frameId: loginLocation.tab.frameId
+        }
+    );
 }
 
 async function getTabInfo(sender: chrome.runtime.MessageSender): Promise<TabInfo | undefined> {

@@ -24,8 +24,16 @@ export interface TabInfo {
 }
 
 export interface FrameLoginFields {
-    frameId: number;
+    tab?: TabInfo;
     fields: LoginFieldsDetectedMessage["fields"];
+}
+
+export interface FillCredentialsMessage {
+    type: "FILL_CREDENTIALS";
+    username?: string;
+    password?: string;
+    usernameField?: FieldDescriptor;
+    passwordField?: FieldDescriptor;
 }
 
 // Json messages

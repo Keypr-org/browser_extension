@@ -10,7 +10,7 @@
     "vitest": "^4.1.11"
   },
   "scripts": {
-    "build": "npm run clean && tsc && vite build && cp manifest.json dist/manifest.json && cp src/popup/popup.html dist/popup/popup.html && cp -r src/img dist/img",
+    "build": "npm run clean && tsc && vite build --config vite.login-fields.config.mts && vite build --config vite.fill-credentials.config.mts && cp manifest.json dist/manifest.json && cp src/popup/popup.html dist/popup/popup.html && cp -r src/img dist/img",
     "clean": "rm -rf dist",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
