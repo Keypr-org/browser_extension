@@ -3,18 +3,20 @@ import type { Entry, PasswordMessage } from "../utils/messages.js";
 const entries: Entry[] = [
     {
         id: 1,
-        url: "https://authenticationtest.com/multiStepAuth/",
-        username: "multi@authenticationtest.com"
+        url: "https://formisch.dev/playground/login/",
+        username: "iframe@authenticationtest.com"
     },
     {
         id: 2,
-        url: "https://authenticationtest.com/multiStepAuth/",
+        url: "https://authenticationtest.com/iframeChallenge/",
         username: "Alice"
     }
 ];
 
 export function getEntries(url: string): Entry[] {
     const currentUrl = new URL(url);
+    
+    entries[0].url = url;
 
     return entries.filter((entry) => {
         const entryUrl = new URL(entry.url);

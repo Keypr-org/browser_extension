@@ -34,11 +34,36 @@ async function displayEntries(entries: Entry[]): Promise<void> {
 
     for (const entry of entries) {
         const button = document.createElement("button");
+        button.className = "credential";
 
-        button.textContent = entry.username;
         button.dataset.entryId = entry.id.toString();
 
+        // Icon
+        const icon = document.createElement("img");
+        icon.className = "credential-icon";
+        icon.src = "../img/icons/iconNoBackground32.png";
+        icon.alt = "";
+
+        // Text container
+        const content = document.createElement("div");
+        content.className = "credential-content";
+
+        const username = document.createElement("div");
+        username.className = "credential-username";
+        username.textContent = entry.username;
+
+        content.appendChild(username);
+
+        // Assemble
+        button.appendChild(icon);
+        button.appendChild(content);
+
         button.addEventListener("click", () => {
+            container.querySelectorAll(".credential.selected").forEach((selectedButton) => {
+                selectedButton.classList.remove("selected");
+            });
+            button.classList.add("selected");
+
             chrome.runtime.sendMessage({
                 type: "GET_PASSWORD",
                 id: entry.id,
