@@ -1,5 +1,10 @@
 // Login fields messages
 
+export interface LoginFields {
+    username?: HTMLInputElement;
+    password?: HTMLInputElement;
+}
+
 export interface FieldDescriptor {
     type: string;
     class: string;

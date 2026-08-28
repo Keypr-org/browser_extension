@@ -19,8 +19,8 @@
     }],
     "web_accessible_resources": [
         {
-            "resources": ["img/icons/icon24.png", "img/icons/iconNoBackground32.png"],
-            "matches": ["https://*/*", "http://*/*"]
+            "resources": ["img/icons/icon24.png", "img/icons/iconNoBackground32.png", "style/credentials-overlay.css"],
+            "matches": ["https://*/*"]
         }
     ],
     "host_permissions": [

@@ -127,7 +127,7 @@ h1 {
     margin-right: 12px;
     border: 1px solid var(--color-border);
     border-radius: 10px;
-    background: #0c1118;
+    background: var(--color-background);
     object-fit: contain;
     padding: 8px;
 }
@@ -164,11 +164,11 @@ h1 {
    ========================= */
 
 .credential.selected {
-    background: #202b3c;
+    background: var(--color-surface);
 
     border-color: var(--color-accent);
 
-    box-shadow: 0 0 0 1px rgba(176, 38, 255, 0.08);
+    box-shadow: 0 0 0 1px var(--color-accent);
 }
 
 
@@ -177,7 +177,7 @@ h1 {
 .credential.selected .credential-icon {
     border-color: var(--color-accent);
 
-    background: #2b2039;
+    background: var(--color-surface);
 
     color: var(--color-accent-soft);
 }
@@ -193,7 +193,7 @@ h1 {
 /* Selected hover */
 
 .credential.selected:hover {
-    background: #263347;
+    background: var(--color-surface-hover);
 }
 
 

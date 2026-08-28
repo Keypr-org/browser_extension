@@ -1,6 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { findLoginFields } from "../../src/content/login-fields.js";
-import { createMessageLoginField } from "../../src/content/login-fields.js";
+import { findLoginFields, createMessageLoginField } from "../../src/content/login-fields.js";
 
 describe("findLoginFields", () => {
     beforeEach(() => {

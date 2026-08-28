@@ -1,10 +1,4 @@
-import type { LoginFieldsDetectedMessage, FieldDescriptor } from "../utils/messages.js";
-import { addCredentialIcon } from "../utils/credentials-icon.js";
-
-export interface LoginFields {
-    username?: HTMLInputElement;
-    password?: HTMLInputElement;
-}
+import type { LoginFieldsDetectedMessage, FieldDescriptor, LoginFields } from "../utils/messages.js";
 
 function findPasswordField(): HTMLInputElement | undefined {
     const passwordFields = Array.from(
@@ -118,14 +112,6 @@ function createFieldDescriptor(field: HTMLInputElement): FieldDescriptor {
 
 export function createMessageLoginField(): LoginFieldsDetectedMessage {
     const fields = findLoginFields();
-
-    if (fields.username) {
-        addCredentialIcon(fields.username);
-    }
-    
-    if (fields.password) {
-        addCredentialIcon(fields.password);
-    }
 
     return {
         type: "LOGIN_FIELDS_DETECTED",

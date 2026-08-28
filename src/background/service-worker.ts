@@ -4,6 +4,23 @@ import type { Entry, GetEntriesMessage,
 
 let loginLocation: FrameLoginFields;
 
+chrome.tabs.onActivated.addListener(async ({ tabId }) => {
+    const tab = await chrome.tabs.get(tabId);
+
+    // Get URL
+    const url = tab.url;
+
+    if (!url) {
+        console.log("No URL available");
+        return;
+    }
+    
+    await handleGetEntries({
+        type: "GET_ENTRIES",
+        url
+    });
+});
+
 chrome.runtime.onMessage.addListener(async (message, sender) => {
     if (message.type === "GET_ENTRIES") {
         await handleGetEntries(message);

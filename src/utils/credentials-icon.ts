@@ -1,4 +1,6 @@
 import { Entry } from "../utils/messages.js";
+import type { LoginFieldsDetectedMessage} from "./messages.js";
+import { findField } from "./find-field.js";
 
 let selectedIcon: HTMLButtonElement | undefined;
 
@@ -11,7 +13,29 @@ chrome.runtime.onMessage.addListener((message) => {
     displayEntries(message.entries);
 });
 
-export function addCredentialIcon( field: HTMLInputElement ): void {
+export function addCredentialIcon(login: LoginFieldsDetectedMessage): void {
+    if (login.fields.username) {
+        const usernameField = findField(login.fields.username);
+        if (usernameField) {
+            addOneCredentialIcon(usernameField, "username");
+        }
+    }
+    
+    if (login.fields.password) {
+        const passwordField = findField(login.fields.password);
+        if (passwordField) {
+            addOneCredentialIcon(passwordField, "password");
+        }
+    }
+}
+
+function addOneCredentialIcon(field: HTMLInputElement, name: string): void {
+    const querySelectorName = "keypr-credential-icon" + name;
+
+    if (document.querySelector("." + querySelectorName)) {
+        return;
+    }
+
     const icon = document.createElement("button");
 
     icon.type = "button";
@@ -54,6 +78,7 @@ export function addCredentialIcon( field: HTMLInputElement ): void {
         });
     });
 
+    icon.classList.add(querySelectorName);
     document.body.appendChild(icon);
 }
 
@@ -115,20 +140,47 @@ export async function displayEntries(entries: Entry[]): Promise<void> {
 }
 
 function createOverlay(): HTMLDivElement {
+    const existingOverlay = document.getElementById(
+        "keypr-credentials-overlay"
+    );
+
+    if (existingOverlay instanceof HTMLDivElement) {
+        return existingOverlay;
+    }
+
     const overlay = document.createElement("div");
 
     overlay.id = "keypr-credentials-overlay";
-    overlay.style.position = "fixed";
-    overlay.style.zIndex = "2147483647";
-    overlay.style.width = "320px";
-    overlay.style.maxHeight = "360px";
-    overlay.style.overflowY = "auto";
-    overlay.style.padding = "8px";
-    overlay.style.background = "#111827";
-    overlay.style.color = "#f1f3f7";
-    overlay.style.border = "1px solid #29364a";
-    overlay.style.borderRadius = "8px";
-    overlay.style.boxShadow = "0 8px 24px rgba(0, 0, 0, 0.35)";
+    
+    const stylesheet = document.createElement("link");
+    stylesheet.rel = "stylesheet";
+    stylesheet.href = chrome.runtime.getURL("style/credentials-overlay.css");
+    document.head.appendChild(stylesheet);
+
+    const closeOverlay = (): void => {
+        overlay.remove();
+        document.removeEventListener(
+            "pointerdown",
+            handleOutsideClick,
+            true
+        );
+        window.removeEventListener("blur", closeOverlay);
+    };
+
+    const handleOutsideClick = (event: PointerEvent): void => {
+        if (event.composedPath().includes(overlay)) {
+            return;
+        }
+
+        closeOverlay();
+    };
+
+    document.addEventListener(
+        "pointerdown",
+        handleOutsideClick,
+        true
+    );
+    window.addEventListener("blur", closeOverlay);
 
     document.body.appendChild(overlay);
 
