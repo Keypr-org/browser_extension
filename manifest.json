@@ -15,12 +15,13 @@
     },
     "content_scripts": [{
         "js": ["content/entry.js"],
-        "matches": ["https://*/*"]
+        "matches": ["http://*/*", "https://*/*"],
+        "all_frames": true
     }],
     "web_accessible_resources": [
         {
             "resources": ["img/icons/icon24.png", "img/icons/iconNoBackground32.png", "style/credentials-overlay.css"],
-            "matches": ["https://*/*"]
+            "matches": ["http://*/*", "https://*/*"]
         }
     ],
     "host_permissions": [
@@ -28,7 +29,6 @@
         "http://*/*"
     ],
     "permissions": [
-        "activeTab",
         "scripting"
     ],
     "action": {

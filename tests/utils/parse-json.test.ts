@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { parseJson } from "../../src/utils/parse-json.js";
+import { parseJson, toJson } from "../../src/utils/parse-json.js";
 
 describe("parseJson", () => {
     it("parses a GET_ENTRIES message", () => {
@@ -125,5 +125,68 @@ describe("parseJson", () => {
             "type": "ENTRIES",
             "entries": {}
         }`)).toThrow("Invalid native message");
+    });
+});
+
+describe("toJson", () => {
+    it("serializes a GET_ENTRIES message", () => {
+        expect(toJson({
+            type: "GET_ENTRIES",
+            url: "https://example.com"
+        })).toBe(
+            '{"type":"GET_ENTRIES","url":"https://example.com"}'
+        );
+    });
+
+    it("serializes a GET_PASSWORD message", () => {
+        expect(toJson({
+            type: "GET_PASSWORD",
+            id: 1,
+            url: "https://example.com",
+            username: "alice"
+        })).toBe(
+            '{"type":"GET_PASSWORD","id":1,"url":"https://example.com","username":"alice"}'
+        );
+    });
+
+    it("serializes an ENTRIES message", () => {
+        expect(toJson({
+            type: "ENTRIES",
+            entries: [
+                {
+                    id: 1,
+                    url: "https://example.com",
+                    username: "alice"
+                },
+                {
+                    id: 2,
+                    url: "https://example.com",
+                    username: "bob"
+                }
+            ]
+        })).toBe(
+            '{"type":"ENTRIES","entries":[{"id":1,"url":"https://example.com","username":"alice"},{"id":2,"url":"https://example.com","username":"bob"}]}'
+        );
+    });
+
+    it("serializes a PASSWORD message", () => {
+        expect(toJson({
+            type: "PASSWORD",
+            id: 1,
+            url: "https://example.com",
+            username: "alice",
+            password: "secret"
+        })).toBe(
+            '{"type":"PASSWORD","id":1,"url":"https://example.com","username":"alice","password":"secret"}'
+        );
+    });
+
+    it("serializes an ERROR message", () => {
+        expect(toJson({
+            type: "ERROR",
+            code: "NOT_FOUND"
+        })).toBe(
+            '{"type":"ERROR","code":"NOT_FOUND"}'
+        );
     });
 });

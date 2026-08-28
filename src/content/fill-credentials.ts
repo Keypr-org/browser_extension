@@ -1,13 +1,10 @@
 import { findField } from "../utils/find-field.js";
+import type { FillCredentialsMessage } from "../utils/messages.js";
 
-chrome.runtime.onMessage.addListener((message) => {
-    if (message.type !== "FILL_CREDENTIALS") {
-        return;
-    }
-
+export function fillCredentials(message: FillCredentialsMessage): void {
     console.log("Received credentials");
 
-    if (message.usernameField) {
+    if (message.usernameField && message.username !== undefined) {
         const usernameField = findField(message.usernameField);
 
         if (usernameField) {
@@ -15,14 +12,14 @@ chrome.runtime.onMessage.addListener((message) => {
         }
     }
 
-    if (message.passwordField) {
+    if (message.passwordField && message.password !== undefined) {
         const passwordField = findField(message.passwordField);
 
         if (passwordField) {
             fillField(passwordField, message.password);
         }
     }
-});
+}
 
 function fillField(field: HTMLInputElement, value: string): void {
     field.value = value;

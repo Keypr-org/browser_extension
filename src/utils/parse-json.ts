@@ -16,6 +16,10 @@ export function parseJson(json: string): NativeMessage {
     return data;
 }
 
+export function toJson(message: NativeMessage): string {
+    return JSON.stringify(message);
+}
+
 function isNativeMessage(value: unknown): value is NativeMessage {
     if (typeof value !== "object" || value === null) {
         return false;

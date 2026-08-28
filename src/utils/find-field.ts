@@ -10,13 +10,9 @@ export function findField(descriptor: FieldDescriptor): HTMLInputElement | undef
     }
 
     if (descriptor.name) {
-        const field = document.querySelector<HTMLInputElement>(
-            `input[name="${CSS.escape(descriptor.name)}"]`
-        );
-
-        if (field) {
-            return field;
-        }
+        return Array.from(
+            document.querySelectorAll<HTMLInputElement>("input[name]")
+        ).find((field) => field.name === descriptor.name);
     }
 
     return undefined;

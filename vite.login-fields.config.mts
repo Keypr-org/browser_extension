@@ -6,11 +6,11 @@ export default defineConfig({
         emptyOutDir: false,
 
         rolldownOptions: {
-            input: "src/content/login-fields-entry.ts",
+            input: "src/content/entry.ts",
 
             output: {
                 format: "iife",
-                entryFileNames: "content/login-fields.js"
+                entryFileNames: "content/entry.js"
             }
         }
     }
