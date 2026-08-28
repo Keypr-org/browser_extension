@@ -1,7 +1,7 @@
 /// <reference types="chrome-types" />
 
 import { describe, expect, it } from "vitest";
-import { getUrlFromTab } from "../src/utils/get-url-from-tab.js";
+import { getUrlFromTab } from "../../src/utils/get-url-from-tab.js";
 
 describe("getUrlFromTab", () => {
     it("returns the URL when the tab has one", () => {

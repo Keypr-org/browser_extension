@@ -1,1 +1,0 @@
-console.log("Content script chargé sur :", window.location.href);

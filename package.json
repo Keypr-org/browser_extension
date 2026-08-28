@@ -3,12 +3,14 @@
     "@eslint/js": "^10.0.1",
     "chrome-types": "^0.1.439",
     "eslint": "^10.8.1",
+    "jsdom": "^29.1.1",
     "typescript": "^6.0.3",
     "typescript-eslint": "^8.67.0",
+    "vite": "^8.2.2",
     "vitest": "^4.1.11"
   },
   "scripts": {
-    "build": "npm run clean && tsc && cp manifest.json dist/manifest.json && cp -r src/popup dist/popup && cp -r src/img dist/img",
+    "build": "npm run clean && tsc && vite build && cp manifest.json dist/manifest.json && cp -r src/popup dist/popup && cp -r src/img dist/img",
     "clean": "rm -rf dist",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",

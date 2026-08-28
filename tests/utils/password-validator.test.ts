@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { isStrongPassword } from "../src/utils/password-validator";
+import { isStrongPassword } from "../../src/utils/password-validator.js";
 
 describe("isStrongPassword", () => {
     it("accepte un mot de passe suffisamment complexe", () => {
