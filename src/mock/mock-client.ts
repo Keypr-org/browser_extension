@@ -1,47 +1,57 @@
-import type { Entry, PasswordMessage } from "../utils/messages.js";
+import type { ReceivedEntry, NativeMessage } from "../utils/messages.js";
+import { parseJson } from "../utils/parse-json.js";
 
-const entries: Entry[] = [
-    {
-        id: 1,
-        url: "https://formisch.dev/playground/login/",
-        username: "iframe@authenticationtest.com"
-    },
-    {
-        id: 2,
-        url: "https://authenticationtest.com/iframeChallenge/",
-        username: "Alice"
+const mockEntriesMessage = `{
+    "type": "ENTRIES",
+    "entries": [
+        {
+            "id": 1,
+            "username": "Bob"
+        },
+        {
+            "id": 2,
+            "username": "Alice"
+        }
+    ]
+}`;
+
+const mockPasswordMessage = `{
+    "type": "PASSWORD",
+    "password": "example_password"
+}`;
+
+export function getEntries(url: string): ReceivedEntry[] | undefined{
+    // const mockRequest: GetEntriesMessage = {type: "GET_ENTRIES",url};
+
+    // Normally:
+    // const json = toJson(mockRequest);
+    // send to native client
+    // const response = receive from native client
+
+    const response: NativeMessage = parseJson(mockEntriesMessage);
+
+    if (response.type !== "ENTRIES") {
+        console.error("Received wrong message type when asking for entries");
+        return;
     }
-];
 
-export function getEntries(url: string): Entry[] {
-    const currentUrl = new URL(url);
-    
-    entries[0].url = url;
-
-    return entries.filter((entry) => {
-        const entryUrl = new URL(entry.url);
-
-        return (
-            entryUrl.origin === currentUrl.origin &&
-            currentUrl.pathname.startsWith(entryUrl.pathname)
-        );
-    });
+    return response.entries;
 }
 
-export function getPassword(id: number): PasswordMessage | undefined {
-    const entry = entries.find(
-        (entry) => entry.id === id
-    );
+export function getPassword(id: number): string | undefined {
+    // const mockRequest: GetPasswordMessage = {type: "GET_PASSWORD",id};
 
-    if (!entry) {
-        return undefined;
+    // Normally:
+    // const json = toJson(mockRequest);
+    // send to native client
+    // const response = receive from native client
+
+    const response: NativeMessage = parseJson(mockPasswordMessage);
+
+    if (response.type !== "PASSWORD") {
+        console.error("Received wrong message type when asking for password");
+        return;
     }
 
-    return {
-        type: "PASSWORD",
-        id: entry.id,
-        url: entry.url,
-        username: entry.username,
-        password: "pa$$w0rd"
-    };
+    return response.password;
 }

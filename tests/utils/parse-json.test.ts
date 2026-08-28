@@ -15,14 +15,10 @@ describe("parseJson", () => {
     it("parses a GET_PASSWORD message", () => {
         expect(parseJson(`{
             "type": "GET_PASSWORD",
-            "id": 1,
-            "url": "https://example.com",
-            "username": "alice"
+            "id": 1
         }`)).toEqual({
             type: "GET_PASSWORD",
-            id: 1,
-            url: "https://example.com",
-            username: "alice"
+            id: 1
         });
     });
 
@@ -32,12 +28,10 @@ describe("parseJson", () => {
             "entries": [
                 {
                     "id": 1,
-                    "url": "https://example.com",
                     "username": "alice"
                 },
                 {
                     "id": 2,
-                    "url": "https://example.com",
                     "username": "bob"
                 }
             ]
@@ -46,13 +40,11 @@ describe("parseJson", () => {
             entries: [
                 {
                     id: 1,
-                    url: "https://example.com",
                     username: "alice"
                 },
                 {
-                    "id": 2,
-                    "url": "https://example.com",
-                    "username": "bob"
+                    id: 2,
+                    username: "bob"
                 }
             ]
         });
@@ -61,15 +53,9 @@ describe("parseJson", () => {
     it("parses a PASSWORD message", () => {
         expect(parseJson(`{
             "type": "PASSWORD",
-            "id": 1,
-            "url": "https://example.com",
-            "username": "alice",
             "password": "secret"
         }`)).toEqual({
             type: "PASSWORD",
-            id: 1,
-            url: "https://example.com",
-            username: "alice",
             password: "secret"
         });
     });
@@ -113,7 +99,6 @@ describe("parseJson", () => {
             "entries": [
                 {
                     "id": "wrong",
-                    "url": "https://example.com",
                     "username": "alice"
                 }
             ]
@@ -142,10 +127,8 @@ describe("toJson", () => {
         expect(toJson({
             type: "GET_PASSWORD",
             id: 1,
-            url: "https://example.com",
-            username: "alice"
         })).toBe(
-            '{"type":"GET_PASSWORD","id":1,"url":"https://example.com","username":"alice"}'
+            '{"type":"GET_PASSWORD","id":1}'
         );
     });
 
@@ -155,29 +138,24 @@ describe("toJson", () => {
             entries: [
                 {
                     id: 1,
-                    url: "https://example.com",
                     username: "alice"
                 },
                 {
                     id: 2,
-                    url: "https://example.com",
                     username: "bob"
                 }
             ]
         })).toBe(
-            '{"type":"ENTRIES","entries":[{"id":1,"url":"https://example.com","username":"alice"},{"id":2,"url":"https://example.com","username":"bob"}]}'
+            '{"type":"ENTRIES","entries":[{"id":1,"username":"alice"},{"id":2,"username":"bob"}]}'
         );
     });
 
     it("serializes a PASSWORD message", () => {
         expect(toJson({
             type: "PASSWORD",
-            id: 1,
-            url: "https://example.com",
-            username: "alice",
             password: "secret"
         })).toBe(
-            '{"type":"PASSWORD","id":1,"url":"https://example.com","username":"alice","password":"secret"}'
+            '{"type":"PASSWORD","password":"secret"}'
         );
     });
 

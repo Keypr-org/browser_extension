@@ -1,8 +1,9 @@
 import { getEntries, getPassword } from "../mock/mock-client.js";
-import type { Entry, GetEntriesMessage,
-    TabInfo, GetPasswordMessage, FillCredentialsMessage, FrameLoginFields} from "../utils/messages.js";
+import type { GetEntriesMessage,
+    TabInfo, GetPasswordMessage, FillCredentialsMessage, FrameLoginFields, ReceivedEntry} from "../utils/messages.js";
 
 const loginLocations = new Map<string, FrameLoginFields>();
+let globEntries: ReceivedEntry[] | undefined;
 
 function locationKey(tabId: number, frameId: number): string {
     return `${tabId}:${frameId}`;
@@ -111,16 +112,21 @@ async function handleLoginFieldsDetected(from: string, sender: chrome.runtime.Me
 
     console.log("Login fields found!");
 
-    const entries: Entry[] = getEntries(url);
+    globEntries = getEntries(url);    
+
+    if (globEntries === undefined) {
+        console.error("No entries found exiting 'getEntries'");
+        return;
+    } 
 
     await sendEntries({
         type: "ENTRIES",
         from,
-        entries
+        entries: globEntries
     }, sender);
 }
 
-async function sendEntries(message: { type: "ENTRIES"; from: string; entries: Entry[] },
+async function sendEntries(message: { type: "ENTRIES"; from: string; entries: ReceivedEntry[] },
     sender: chrome.runtime.MessageSender): Promise<void> {
     const tabId = sender.tab?.id;
 
@@ -134,8 +140,7 @@ async function sendEntries(message: { type: "ENTRIES"; from: string; entries: En
     });
 }
 
-async function handleGetPassword(message: GetPasswordMessage,
-    sender: chrome.runtime.MessageSender): Promise<void> {
+async function handleGetPassword(message: GetPasswordMessage, sender: chrome.runtime.MessageSender): Promise<void> {
     const loginLocation = await getLoginLocation(sender);
 
     if (loginLocation === undefined) {
@@ -150,10 +155,22 @@ async function handleGetPassword(message: GetPasswordMessage,
         return;
     }
 
+    if (globEntries === undefined) {
+        console.error("globEntries is undefined inside of handleGetPassword");
+        return;
+    } 
+
+    const entry = globEntries.find((entry) => entry.id === message.id);
+
+    if (entry === undefined) {
+        console.error("No entry for the requested entry");
+        return;
+    }
+
     const messageCred: FillCredentialsMessage = {
         type: "FILL_CREDENTIALS",
-        username: pw.username,
-        password: pw.password,
+        username: entry?.username,
+        password: pw,
         usernameField: loginLocation.fields.username,
         passwordField: loginLocation.fields.password
     };
