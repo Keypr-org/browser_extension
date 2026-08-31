@@ -1,3 +1,5 @@
+import type { LoginFieldsDetectedMessage, FieldDescriptor } from "../utils/messages.js";
+
 export interface LoginFields {
     username?: HTMLInputElement;
     password?: HTMLInputElement;
@@ -99,5 +101,28 @@ export function findLoginFields(): LoginFields {
     return {
         username: findUsernameField(),
         password: findPasswordField()
+    };
+}
+
+function createFieldDescriptor(field: HTMLInputElement): FieldDescriptor {
+    return {
+        type: field.type,
+        class: field.className,
+        name: field.name,
+        placeholder: field.placeholder,
+        id: field.id,
+        autocomplete: field.autocomplete
+    };
+}
+
+export function createMessageLoginField(): LoginFieldsDetectedMessage {
+    const fields = findLoginFields();
+
+    return {
+        type: "LOGIN_FIELDS_DETECTED",
+        fields: {
+            username: fields.username ? createFieldDescriptor(fields.username) : undefined,
+            password: fields.password ? createFieldDescriptor(fields.password) : undefined
+        }
     };
 }
