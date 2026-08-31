@@ -4,19 +4,15 @@ import type { FillCredentialsMessage } from "../utils/messages.js";
 export function fillCredentials(message: FillCredentialsMessage): void {
     console.log("Received credentials");
 
-    if (message.usernameField && message.username !== undefined) {
-        const usernameField = findField(message.usernameField);
-
-        if (usernameField) {
-            fillField(usernameField, message.username);
+    for (const field of Object.values(message.fields)) {
+        if (!field) {
+            continue;
         }
-    }
 
-    if (message.passwordField && message.password !== undefined) {
-        const passwordField = findField(message.passwordField);
+        const element = findField(field.descriptor);
 
-        if (passwordField) {
-            fillField(passwordField, message.password);
+        if (element) {
+            fillField(element, field.value);
         }
     }
 }

@@ -16,6 +16,7 @@ export interface DetectedFieldsHTML {
     city?: HTMLInputElement;
     postalCode?: HTMLInputElement;
     country?: HTMLInputElement;
+    dateOfBirth?: HTMLInputElement;
 }
 
 export interface FieldDescriptor {
@@ -40,6 +41,7 @@ export interface LoginFieldsDetectedMessage {
         city?: FieldDescriptor;
         postalCode?: FieldDescriptor;
         country?: FieldDescriptor;
+        dateOfBirth?: FieldDescriptor;
     };
 }
 
@@ -54,12 +56,27 @@ export interface FrameLoginFields {
     fields: LoginFieldsDetectedMessage["fields"];
 }
 
+export interface FillCredentialField {
+    descriptor: FieldDescriptor;
+    value: string;
+}
+
 export interface FillCredentialsMessage {
     type: "FILL_CREDENTIALS";
-    username?: string;
-    password?: string;
-    usernameField?: FieldDescriptor;
-    passwordField?: FieldDescriptor;
+
+    fields: {
+        username?: FillCredentialField;
+        password?: FillCredentialField;
+        firstname?: FillCredentialField;
+        lastname?: FillCredentialField;
+        email?: FillCredentialField;
+        address?: FillCredentialField;
+        city?: FillCredentialField;
+        postalCode?: FillCredentialField;
+        country?: FillCredentialField;
+        dateOfBirth?: FillCredentialField;
+        confirmPassword?: FillCredentialField;
+    };
 }
 
 // Json messages

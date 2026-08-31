@@ -24,7 +24,8 @@ export function addCredentialIcon(login: LoginFieldsDetectedMessage): void {
         ["city", login.fields.city],
         ["postalCode", login.fields.postalCode],
         ["country", login.fields.country],
-        ["confirmPassword", login.fields.confirmPassword]
+        ["confirmPassword", login.fields.confirmPassword],
+        ["dateOfBirth", login.fields.dateOfBirth]
     ] as const;
 
     for (const [type, descriptor] of fields) {

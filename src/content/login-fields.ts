@@ -180,6 +180,18 @@ function findCountryField(fields: HTMLInputElement[]): HTMLInputElement | undefi
     ]);
 }
 
+function findDateOfBirthField(fields: HTMLInputElement[]): HTMLInputElement | undefined {
+    return findField(fields, [
+        "bday",
+        "birth",
+        "birthday",
+        "birthdate",
+        "date-of-birth",
+        "dateofbirth",
+        "date_of_birth"
+    ]);
+}
+
 export function findLoginFields(): DetectedFieldsHTML {
     const fields = getInputFields();
     const passwords = findPasswordFields();
@@ -194,7 +206,8 @@ export function findLoginFields(): DetectedFieldsHTML {
         address: findAddressField(fields),
         city: findCityField(fields),
         postalCode: findPostalCodeField(fields),
-        country: findCountryField(fields)
+        country: findCountryField(fields),
+        dateOfBirth: findDateOfBirthField(fields)
     };
 }
 
@@ -253,6 +266,10 @@ export function createMessageLoginField(): LoginFieldsDetectedMessage {
 
             country: fields.country
                 ? createFieldDescriptor(fields.country)
+                : undefined,
+
+            dateOfBirth: fields.dateOfBirth
+                ? createFieldDescriptor(fields.dateOfBirth)
                 : undefined
         }
     };
