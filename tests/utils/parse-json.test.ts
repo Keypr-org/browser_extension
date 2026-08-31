@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { parseJson } from "../../src/utils/parse-json.js";
+import { parseJson, toJson } from "../../src/utils/parse-json.js";
 
 describe("parseJson", () => {
     it("parses a GET_ENTRIES message", () => {
@@ -15,14 +15,10 @@ describe("parseJson", () => {
     it("parses a GET_PASSWORD message", () => {
         expect(parseJson(`{
             "type": "GET_PASSWORD",
-            "id": 1,
-            "url": "https://example.com",
-            "username": "alice"
+            "id": 1
         }`)).toEqual({
             type: "GET_PASSWORD",
-            id: 1,
-            url: "https://example.com",
-            username: "alice"
+            id: 1
         });
     });
 
@@ -32,12 +28,10 @@ describe("parseJson", () => {
             "entries": [
                 {
                     "id": 1,
-                    "url": "https://example.com",
                     "username": "alice"
                 },
                 {
                     "id": 2,
-                    "url": "https://example.com",
                     "username": "bob"
                 }
             ]
@@ -46,13 +40,11 @@ describe("parseJson", () => {
             entries: [
                 {
                     id: 1,
-                    url: "https://example.com",
                     username: "alice"
                 },
                 {
-                    "id": 2,
-                    "url": "https://example.com",
-                    "username": "bob"
+                    id: 2,
+                    username: "bob"
                 }
             ]
         });
@@ -61,15 +53,9 @@ describe("parseJson", () => {
     it("parses a PASSWORD message", () => {
         expect(parseJson(`{
             "type": "PASSWORD",
-            "id": 1,
-            "url": "https://example.com",
-            "username": "alice",
             "password": "secret"
         }`)).toEqual({
             type: "PASSWORD",
-            id: 1,
-            url: "https://example.com",
-            username: "alice",
             password: "secret"
         });
     });
@@ -113,7 +99,6 @@ describe("parseJson", () => {
             "entries": [
                 {
                     "id": "wrong",
-                    "url": "https://example.com",
                     "username": "alice"
                 }
             ]
@@ -125,5 +110,61 @@ describe("parseJson", () => {
             "type": "ENTRIES",
             "entries": {}
         }`)).toThrow("Invalid native message");
+    });
+});
+
+describe("toJson", () => {
+    it("serializes a GET_ENTRIES message", () => {
+        expect(toJson({
+            type: "GET_ENTRIES",
+            url: "https://example.com"
+        })).toBe(
+            '{"type":"GET_ENTRIES","url":"https://example.com"}'
+        );
+    });
+
+    it("serializes a GET_PASSWORD message", () => {
+        expect(toJson({
+            type: "GET_PASSWORD",
+            id: 1,
+        })).toBe(
+            '{"type":"GET_PASSWORD","id":1}'
+        );
+    });
+
+    it("serializes an ENTRIES message", () => {
+        expect(toJson({
+            type: "ENTRIES",
+            entries: [
+                {
+                    id: 1,
+                    username: "alice"
+                },
+                {
+                    id: 2,
+                    username: "bob"
+                }
+            ]
+        })).toBe(
+            '{"type":"ENTRIES","entries":[{"id":1,"username":"alice"},{"id":2,"username":"bob"}]}'
+        );
+    });
+
+    it("serializes a PASSWORD message", () => {
+        expect(toJson({
+            type: "PASSWORD",
+            password: "secret"
+        })).toBe(
+            '{"type":"PASSWORD","password":"secret"}'
+        );
+    });
+
+    it("serializes an ERROR message", () => {
+        expect(toJson({
+            type: "ERROR",
+            code: "NOT_FOUND"
+        })).toBe(
+            '{"type":"ERROR","code":"NOT_FOUND"}'
+        );
     });
 });

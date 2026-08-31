@@ -1,4 +1,4 @@
-import type { Entry, NativeMessage } from "./messages.js";
+import type { ReceivedEntry, NativeMessage } from "./messages.js";
 
 export function parseJson(json: string): NativeMessage {
     let data: unknown;
@@ -14,6 +14,10 @@ export function parseJson(json: string): NativeMessage {
     }
 
     return data;
+}
+
+export function toJson(message: NativeMessage): string {
+    return JSON.stringify(message);
 }
 
 function isNativeMessage(value: unknown): value is NativeMessage {
@@ -33,9 +37,7 @@ function isNativeMessage(value: unknown): value is NativeMessage {
 
         case "GET_PASSWORD":
             return (
-                typeof message.id === "number" &&
-                typeof message.url === "string" &&
-                typeof message.username === "string"
+                typeof message.id === "number"
             );
 
         case "ENTRIES":
@@ -46,9 +48,6 @@ function isNativeMessage(value: unknown): value is NativeMessage {
 
         case "PASSWORD":
             return (
-                typeof message.id === "number" &&
-                typeof message.url === "string" &&
-                typeof message.username === "string" &&
                 typeof message.password === "string"
             );
 
@@ -60,7 +59,7 @@ function isNativeMessage(value: unknown): value is NativeMessage {
     }
 }
 
-function isEntry(value: unknown): value is Entry {
+function isEntry(value: unknown): value is ReceivedEntry {
     if (typeof value !== "object" || value === null) {
         return false;
     }
@@ -69,7 +68,6 @@ function isEntry(value: unknown): value is Entry {
 
     return (
         typeof entry.id === "number" &&
-        typeof entry.url === "string" &&
         typeof entry.username === "string"
     );
 }

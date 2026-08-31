@@ -1,5 +1,10 @@
 // Login fields messages
 
+export interface LoginFields {
+    username?: HTMLInputElement;
+    password?: HTMLInputElement;
+}
+
 export interface FieldDescriptor {
     type: string;
     class: string;
@@ -24,7 +29,7 @@ export interface TabInfo {
 }
 
 export interface FrameLoginFields {
-    tab?: TabInfo;
+    tab: TabInfo;
     fields: LoginFieldsDetectedMessage["fields"];
 }
 
@@ -46,8 +51,6 @@ export interface GetEntriesMessage {
 export interface GetPasswordMessage {
     type: "GET_PASSWORD";
     id: number;
-    url: string;
-    username: string;
 }
 
 export interface Entry {
@@ -56,16 +59,18 @@ export interface Entry {
     username: string;
 }
 
+export interface ReceivedEntry {
+    id: number;
+    username: string;
+}
+
 export interface EntriesMessage {
     type: "ENTRIES";
-    entries: Entry[];
+    entries: ReceivedEntry[];
 }
 
 export interface PasswordMessage {
     type: "PASSWORD";
-    id: number;
-    url: string;
-    username: string;
     password: string;
 }
 

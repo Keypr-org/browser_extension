@@ -1,8 +1,50 @@
 import { getEntries, getPassword } from "../mock/mock-client.js";
-import type { Entry, LoginFieldsDetectedMessage, GetEntriesMessage,
-    TabInfo, GetPasswordMessage, FillCredentialsMessage, FrameLoginFields} from "../utils/messages.js";
+import type { GetEntriesMessage,
+    TabInfo, GetPasswordMessage, FillCredentialsMessage, FrameLoginFields, ReceivedEntry} from "../utils/messages.js";
 
-let loginLocation: FrameLoginFields | undefined;
+const loginLocations = new Map<string, FrameLoginFields>();
+let globEntries: ReceivedEntry[] | undefined;
+
+function locationKey(tabId: number, frameId: number): string {
+    return `${tabId}:${frameId}`;
+}
+
+chrome.tabs.onActivated.addListener(async ({ tabId }) => {
+    const tab = await chrome.tabs.get(tabId).catch(() => undefined);
+
+    // Get URL
+    const url = tab?.url;
+
+    if (!url || !isSupportedPage(url)) {
+        console.log("No URL available");
+        return;
+    }
+    
+    await handleGetEntries({
+        type: "GET_ENTRIES",
+        url
+    });
+});
+
+chrome.tabs.onUpdated.addListener((tabId, changeInfo) => {
+    if (changeInfo.status !== "loading") {
+        return;
+    }
+
+    for (const key of loginLocations.keys()) {
+        if (key.startsWith(`${tabId}:`)) {
+            loginLocations.delete(key);
+        }
+    }
+});
+
+chrome.tabs.onRemoved.addListener((tabId) => {
+    for (const key of loginLocations.keys()) {
+        if (key.startsWith(`${tabId}:`)) {
+            loginLocations.delete(key);
+        }
+    }
+});
 
 chrome.runtime.onMessage.addListener(async (message, sender) => {
     if (message.type === "GET_ENTRIES") {
@@ -13,14 +55,14 @@ chrome.runtime.onMessage.addListener(async (message, sender) => {
             return;
         }
 
-        loginLocation = {
+        loginLocations.set(locationKey(tabInfo.tabId, tabInfo.frameId), {
             tab: tabInfo,
             fields: message.fields
-        };
-
-        handleLoginFieldsDetected(message, tabInfo.url);
+        });
+    } else if (message.type === "SHOW_CREDENTIALS") {
+        await handleLoginFieldsDetected(message.from, sender);
     } else if (message.type === "GET_PASSWORD") {
-        await handleGetPassword(message);
+        await handleGetPassword(message, sender);
     }
 });
 
@@ -37,41 +79,70 @@ async function handleGetEntries(message: GetEntriesMessage): Promise<void> {
 
     console.log("Current URL:", message.url);
 
-    // Detect fields
-    await chrome.scripting.executeScript({
-        target: {
-            tabId: tab.id,
-            allFrames: true
-        },
-        files: ["content/login-fields.js"]
+    await sendTabMessage(tab.id, {
+        type: "DETECT_LOGIN_FIELDS"
     });
 }
 
-function handleLoginFieldsDetected(message: LoginFieldsDetectedMessage, url: string): void {
-    console.log("Login fields detected:", message.fields);
+async function handleLoginFieldsDetected(from: string, sender: chrome.runtime.MessageSender): Promise<void> {
+    const loginLocation = await getLoginLocation(sender);
 
-    if (message.fields.username === undefined && message.fields.password === undefined) {
+    if (loginLocation === undefined) {
+        console.log("No login field location available");
+        return;
+    }
+
+    console.log("Login fields detected:", loginLocation.fields);
+
+    const usernameField = loginLocation.fields.username;
+    const passwordField = loginLocation.fields.password;
+    const url = loginLocation.tab.url;
+
+    if (usernameField === undefined && passwordField === undefined) {
         console.log("No login fields found");
 
-        chrome.runtime.sendMessage({
+        await sendEntries({
             type: "ENTRIES",
+            from,
             entries: []
-        });
+        }, sender);
 
         return;
     }
 
     console.log("Login fields found!");
 
-    const entries: Entry[] = getEntries(url);
+    globEntries = getEntries(url);    
 
-    chrome.runtime.sendMessage({
+    if (globEntries === undefined) {
+        console.error("No entries found exiting 'getEntries'");
+        return;
+    } 
+
+    await sendEntries({
         type: "ENTRIES",
-        entries
+        from,
+        entries: globEntries
+    }, sender);
+}
+
+async function sendEntries(message: { type: "ENTRIES"; from: string; entries: ReceivedEntry[] },
+    sender: chrome.runtime.MessageSender): Promise<void> {
+    const tabId = sender.tab?.id;
+
+    if (tabId !== undefined && sender.frameId !== undefined) {
+        await sendTabMessage(tabId, message, {frameId: sender.frameId});
+        return;
+    }
+
+    await chrome.runtime.sendMessage(message).catch(() => {
+        console.log("No popup is open to receive entries");
     });
 }
 
-async function handleGetPassword(message: GetPasswordMessage): Promise<void> {
+async function handleGetPassword(message: GetPasswordMessage, sender: chrome.runtime.MessageSender): Promise<void> {
+    const loginLocation = await getLoginLocation(sender);
+
     if (loginLocation === undefined) {
         console.log("No login field location available");
         return;
@@ -84,10 +155,22 @@ async function handleGetPassword(message: GetPasswordMessage): Promise<void> {
         return;
     }
 
+    if (globEntries === undefined) {
+        console.error("globEntries is undefined inside of handleGetPassword");
+        return;
+    } 
+
+    const entry = globEntries.find((entry) => entry.id === message.id);
+
+    if (entry === undefined) {
+        console.error("No entry for the requested entry");
+        return;
+    }
+
     const messageCred: FillCredentialsMessage = {
         type: "FILL_CREDENTIALS",
-        username: pw.username,
-        password: pw.password,
+        username: entry?.username,
+        password: pw,
         usernameField: loginLocation.fields.username,
         passwordField: loginLocation.fields.password
     };
@@ -97,20 +180,50 @@ async function handleGetPassword(message: GetPasswordMessage): Promise<void> {
         return;
     }
 
-    await chrome.scripting.executeScript({
-        target: {
-            tabId: loginLocation.tab.tabId,
-            frameIds: [loginLocation.tab.frameId]
-        },
-        files: ["content/fill-credentials.js"]
-    });
-
-    await chrome.tabs.sendMessage(
+    await sendTabMessage(
         loginLocation.tab.tabId,
         messageCred,
         {
             frameId: loginLocation.tab.frameId
         }
+    );
+}
+
+async function sendTabMessage(tabId: number, message: object,
+    options?: { frameId?: number }): Promise<void> {
+    try {
+        await chrome.tabs.sendMessage(tabId, message, options);
+    } catch {
+        console.log("No content script available in this tab or frame");
+    }
+}
+
+function isSupportedPage(url: string): boolean {
+    return url.startsWith("http://") || url.startsWith("https://");
+}
+
+async function getLoginLocation(sender: chrome.runtime.MessageSender): Promise<FrameLoginFields | undefined> {
+    const senderTabId = sender.tab?.id;
+
+    if (senderTabId !== undefined && sender.frameId !== undefined) {
+        return loginLocations.get(
+            locationKey(senderTabId, sender.frameId)
+        );
+    }
+
+    const [tab] = await chrome.tabs.query({
+        active: true,
+        currentWindow: true
+    });
+
+    if (tab.id === undefined) {
+        return undefined;
+    }
+
+    return [...loginLocations.values()].find((location) =>
+            location.tab.tabId === tab.id &&
+            (location.fields.username !== undefined ||
+                location.fields.password !== undefined)
     );
 }
 

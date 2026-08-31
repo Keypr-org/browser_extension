@@ -1,9 +1,4 @@
-import type { LoginFieldsDetectedMessage, FieldDescriptor } from "../utils/messages.js";
-
-export interface LoginFields {
-    username?: HTMLInputElement;
-    password?: HTMLInputElement;
-}
+import type { LoginFieldsDetectedMessage, FieldDescriptor, LoginFields } from "../utils/messages.js";
 
 function findPasswordField(): HTMLInputElement | undefined {
     const passwordFields = Array.from(
