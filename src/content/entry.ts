@@ -4,12 +4,24 @@ import { fillCredentials } from "./fill-credentials.js";
 
 function detectLoginFields(): void {
     const message = createMessageLoginField();
+
+    console.log("Detected fields:", message);
+
     addCredentialIcon(message);
 
     if (message.fields.username || message.fields.password) {
         chrome.runtime.sendMessage(message);
     }
 }
+
+const observer = new MutationObserver(() => {
+    detectLoginFields();
+});
+
+observer.observe(document.documentElement, {
+    childList: true,
+    subtree: true
+});
 
 chrome.runtime.onMessage.addListener((message) => {
     if (message.type === "DETECT_LOGIN_FIELDS") {
