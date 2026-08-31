@@ -1,4 +1,4 @@
-import type { ReceivedEntry, NativeMessage } from "../utils/messages.js";
+import type { ReceivedEntry, NativeMessage, GetPasswordMessage, GetEntriesMessage } from "../utils/messages.js";
 import { parseJson } from "../utils/parse-json.js";
 
 const mockEntriesMessage = `{
@@ -21,8 +21,8 @@ const mockPasswordMessage = `{
 }`;
 
 export function getEntries(url: string): ReceivedEntry[] | undefined{
-    // const mockRequest: GetEntriesMessage = {type: "GET_ENTRIES",url};
-
+    const mockRequest: GetEntriesMessage = {type: "GET_ENTRIES",url};
+    console.log(mockRequest);
     // Normally:
     // const json = toJson(mockRequest);
     // send to native client
@@ -39,7 +39,8 @@ export function getEntries(url: string): ReceivedEntry[] | undefined{
 }
 
 export function getPassword(id: number): string | undefined {
-    // const mockRequest: GetPasswordMessage = {type: "GET_PASSWORD",id};
+    const mockRequest: GetPasswordMessage = {type: "GET_PASSWORD",id};
+    console.log(mockRequest);
 
     // Normally:
     // const json = toJson(mockRequest);
