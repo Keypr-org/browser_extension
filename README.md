@@ -15,3 +15,4 @@
 After that, if you want to change something in the files inside of `dist`, you just need to run `npm run clean` then `npm run build`. Then, you can press the refresh button on buttom right of the extension as shown here :
 
 ![](/docs/img/browser_extension_2.png)
+ 
