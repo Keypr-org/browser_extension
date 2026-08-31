@@ -13,9 +13,25 @@
         "service_worker": "background/service-worker.js",
         "type": "module"
     },
+    "content_scripts": [{
+        "js": ["content/entry.js"],
+        "matches": ["http://*/*", "https://*/*"],
+        "all_frames": true
+    }],
+    "web_accessible_resources": [
+        {
+            "resources": ["img/icons/icon24.png", "img/icons/iconNoBackground32.png", "style/credentials-overlay.css"],
+            "matches": ["http://*/*", "https://*/*"]
+        }
+    ],
+    "host_permissions": [
+        "https://*/*",
+        "http://*/*"
+    ],
     "permissions": [
-        "activeTab",
         "scripting"
     ],
-    "action": {}
+    "action": {
+        "default_popup": "popup/popup.html"
+    }
 }

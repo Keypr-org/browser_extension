@@ -13,6 +13,8 @@
         "src"
     ],
     "exclude": [
-        "src/content"
+        "src/content/fill-credentials.ts",
+        "src/content/login-fields-entry.ts",
+        "src/content/login-fields.ts",
     ]
 }
