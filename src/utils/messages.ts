@@ -1,8 +1,21 @@
 // Login fields messages
 
-export interface LoginFields {
+export interface PasswordsFieldsHTML {
+    password?: HTMLInputElement;
+    confirmPassword?: HTMLInputElement;
+}
+
+export interface DetectedFieldsHTML {
     username?: HTMLInputElement;
     password?: HTMLInputElement;
+    confirmPassword?: HTMLInputElement;
+    firstname?: HTMLInputElement;
+    lastname?: HTMLInputElement;
+    email?: HTMLInputElement;
+    address?: HTMLInputElement;
+    city?: HTMLInputElement;
+    postalCode?: HTMLInputElement;
+    country?: HTMLInputElement;
 }
 
 export interface FieldDescriptor {
@@ -19,6 +32,14 @@ export interface LoginFieldsDetectedMessage {
     fields: {
         username?: FieldDescriptor;
         password?: FieldDescriptor;
+        confirmPassword?: FieldDescriptor;
+        firstname?: FieldDescriptor;
+        lastname?: FieldDescriptor;
+        email?: FieldDescriptor;
+        address?: FieldDescriptor;
+        city?: FieldDescriptor;
+        postalCode?: FieldDescriptor;
+        country?: FieldDescriptor;
     };
 }
 

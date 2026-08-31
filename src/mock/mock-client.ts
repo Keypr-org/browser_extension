@@ -11,6 +11,26 @@ const mockEntriesMessage = `{
         {
             "id": 2,
             "username": "Alice"
+        },
+        {
+            "id": 3,
+            "username": "C"
+        },
+        {
+            "id": 4,
+            "username": "D"
+        },
+        {
+            "id": 5,
+            "username": "E"
+        },
+        {
+            "id": 6,
+            "username": "F"
+        },
+        {
+            "id": 7,
+            "username": "G"
         }
     ]
 }`;

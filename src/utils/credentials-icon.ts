@@ -14,33 +14,49 @@ chrome.runtime.onMessage.addListener((message) => {
 });
 
 export function addCredentialIcon(login: LoginFieldsDetectedMessage): void {
-    if (login.fields.username) {
-        const usernameField = findField(login.fields.username);
-        if (usernameField) {
-            addOneCredentialIcon(usernameField, "username");
+    const fields = [
+        ["username", login.fields.username],
+        ["password", login.fields.password],
+        ["email", login.fields.email],
+        ["firstname", login.fields.firstname],
+        ["lastname", login.fields.lastname],
+        ["address", login.fields.address],
+        ["city", login.fields.city],
+        ["postalCode", login.fields.postalCode],
+        ["country", login.fields.country],
+        ["confirmPassword", login.fields.confirmPassword]
+    ] as const;
+
+    for (const [type, descriptor] of fields) {
+        if (!descriptor) {
+            continue;
         }
-    }
-    
-    if (login.fields.password) {
-        const passwordField = findField(login.fields.password);
-        if (passwordField) {
-            addOneCredentialIcon(passwordField, "password");
+
+        const field = findField(descriptor);
+
+        if (field) {
+            addOneCredentialIcon(field, type);
         }
     }
 }
 
-function addOneCredentialIcon(field: HTMLInputElement, name: string): void {
-    const querySelectorName = "keypr-credential-icon" + name;
-
-    if (document.querySelector("." + querySelectorName)) {
+function addOneCredentialIcon(
+    field: HTMLInputElement,
+    name: string
+): void {
+    if (field.dataset.keyprCredentialIcon === "true") {
         return;
     }
+
+    field.dataset.keyprCredentialIcon = "true";
 
     const icon = document.createElement("button");
 
     icon.type = "button";
+    icon.classList.add(`keypr-credential-icon-${name}`);
 
     const iconImage = document.createElement("img");
+
     iconImage.src = chrome.runtime.getURL("img/icons/icon24.png");
     iconImage.alt = "Show credentials";
     iconImage.width = 24;
@@ -56,30 +72,38 @@ function addOneCredentialIcon(field: HTMLInputElement, name: string): void {
     icon.style.padding = "0";
     icon.style.width = "24px";
     icon.style.height = "24px";
-    icon.style.display = "flex";
-    icon.style.alignItems = "center";
-    icon.style.justifyContent = "center";
-    icon.style.boxSizing = "border-box";
 
     iconImage.style.display = "block";
     iconImage.style.width = "24px";
     iconImage.style.height = "24px";
 
-    const rect = field.getBoundingClientRect();
+    document.body.appendChild(icon);
 
-    icon.style.left = `${window.scrollX + rect.right - 32}px`;
-    icon.style.top = `${window.scrollY + rect.top + (rect.height - 24) / 2}px`;
+    positionCredentialIcon(icon, field);
 
     icon.addEventListener("click", () => {
         selectedIcon = icon;
+
         chrome.runtime.sendMessage({
             type: "SHOW_CREDENTIALS",
             from: "CREDENTIALS_ICON"
         });
     });
 
-    icon.classList.add(querySelectorName);
-    document.body.appendChild(icon);
+    window.addEventListener("scroll", () => {
+        positionCredentialIcon(icon, field);
+    });
+
+    window.addEventListener("resize", () => {
+        positionCredentialIcon(icon, field);
+    });
+}
+
+function positionCredentialIcon(icon: HTMLButtonElement, field: HTMLInputElement): void {
+    const rect = field.getBoundingClientRect();
+
+    icon.style.left = `${window.scrollX + rect.right - 32}px`;
+    icon.style.top = `${window.scrollY + rect.top + (rect.height - 24) / 2}px`;
 }
 
 export async function displayEntries(entries: Entry[]): Promise<void> {
@@ -185,9 +209,42 @@ function createOverlay(): HTMLDivElement {
     document.body.appendChild(overlay);
 
     const anchor = selectedIcon?.getBoundingClientRect();
+
     if (anchor) {
-        overlay.style.left = `${Math.min(anchor.left, window.innerWidth - 328)}px`;
-        overlay.style.top = `${anchor.bottom + 8}px`;
+        const gap = 8;
+        const overlayWidth = 320;
+        const overlayHeight = 400;
+
+        let left = anchor.left;
+        let top = anchor.bottom + gap;
+
+        // Keep the overlay inside the viewport horizontally
+        left = Math.min(
+            left,
+            window.innerWidth - overlayWidth - gap
+        );
+
+        left = Math.max(left, gap);
+
+        // If there isn't enough room below, put it above the icon
+        if (
+            top + overlayHeight > window.innerHeight &&
+            anchor.top - overlayHeight - gap >= 0
+        ) {
+            top = anchor.top - overlayHeight - gap;
+        }
+
+        // Keep it inside the viewport vertically
+        top = Math.max(
+            gap,
+            Math.min(
+                top,
+                window.innerHeight - overlayHeight - gap
+            )
+        );
+
+        overlay.style.left = `${left}px`;
+        overlay.style.top = `${top}px`;
     } else {
         overlay.style.right = "16px";
         overlay.style.top = "16px";

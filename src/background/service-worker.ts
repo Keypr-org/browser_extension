@@ -112,7 +112,7 @@ async function handleLoginFieldsDetected(from: string, sender: chrome.runtime.Me
 
     console.log("Login fields found!");
 
-    globEntries = getEntries(url);    
+    globEntries = getEntries(url);
 
     if (globEntries === undefined) {
         console.error("No entries found exiting 'getEntries'");
