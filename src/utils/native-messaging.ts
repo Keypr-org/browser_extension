@@ -1,5 +1,5 @@
-import type { ReceivedEntry, NativeMessage, GetPasswordMessage, GetEntriesMessage } from "../utils/messages.js";
-import { parseJson } from "../utils/parse-json.js";
+import type { ReceivedEntry, NativeMessage, GetPasswordMessage, GetEntriesMessage } from "./messages.js";
+import { parseJson } from "./parse-json.js";
 
 const mockEntriesMessage = `{
     "type": "ENTRIES",
@@ -25,6 +25,13 @@ export function getEntries(url: string): ReceivedEntry[] | undefined{
     console.log(mockRequest);
     // Normally:
     // const json = toJson(mockRequest);
+    chrome.runtime.sendNativeMessage(
+        'com.keypr.native',
+        {mockRequest},
+        function (response) {
+            console.log('Received ' + response);
+        }
+    );
     // send to native client
     // const response = receive from native client
 

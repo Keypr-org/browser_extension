@@ -1,4 +1,4 @@
-import { getEntries, getPassword } from "../mock/mock-client.js";
+import { getEntries, getPassword } from "../utils/native-messaging.js";
 import type { GetEntriesMessage,
     TabInfo, GetPasswordMessage, FillCredentialsMessage, FrameLoginFields, ReceivedEntry} from "../utils/messages.js";
 
@@ -259,3 +259,18 @@ async function getTabInfo(sender: chrome.runtime.MessageSender): Promise<TabInfo
         frameId: frameId
     };
 }
+
+const port = chrome.runtime.connectNative("com.keypr.native");
+
+port.onMessage.addListener((message) => {
+    console.log("Received from Qt:", message);
+});
+
+port.onDisconnect.addListener(() => {
+    console.error("Native host disconnected");
+});
+
+port.postMessage({
+    type: "GET_ENTRIES",
+    url: "https://example.com"
+});

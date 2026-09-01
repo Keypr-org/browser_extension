@@ -29,7 +29,8 @@
         "http://*/*"
     ],
     "permissions": [
-        "scripting"
+        "scripting",
+        "nativeMessaging"
     ],
     "action": {
         "default_popup": "popup/popup.html"
