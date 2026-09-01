@@ -15,10 +15,10 @@ describe("parseJson", () => {
     it("parses a GET_PASSWORD message", () => {
         expect(parseJson(`{
             "type": "GET_PASSWORD",
-            "id": 1
+            "id": "1"
         }`)).toEqual({
             type: "GET_PASSWORD",
-            id: 1
+            id: "1"
         });
     });
 
@@ -27,11 +27,11 @@ describe("parseJson", () => {
             "type": "ENTRIES",
             "entries": [
                 {
-                    "id": 1,
+                    "id": "1",
                     "username": "alice"
                 },
                 {
-                    "id": 2,
+                    "id": "2",
                     "username": "bob"
                 }
             ]
@@ -39,11 +39,11 @@ describe("parseJson", () => {
             type: "ENTRIES",
             entries: [
                 {
-                    id: 1,
+                    id: "1",
                     username: "alice"
                 },
                 {
-                    id: 2,
+                    id: "2",
                     username: "bob"
                 }
             ]
@@ -98,7 +98,7 @@ describe("parseJson", () => {
             "type": "ENTRIES",
             "entries": [
                 {
-                    "id": "wrong",
+                    "id": 42,
                     "username": "alice"
                 }
             ]
@@ -126,9 +126,9 @@ describe("toJson", () => {
     it("serializes a GET_PASSWORD message", () => {
         expect(toJson({
             type: "GET_PASSWORD",
-            id: 1,
+            id: "1",
         })).toBe(
-            '{"type":"GET_PASSWORD","id":1}'
+            '{"type":"GET_PASSWORD","id":"1"}'
         );
     });
 
@@ -137,16 +137,16 @@ describe("toJson", () => {
             type: "ENTRIES",
             entries: [
                 {
-                    id: 1,
+                    id: "1",
                     username: "alice"
                 },
                 {
-                    id: 2,
+                    id: "2",
                     username: "bob"
                 }
             ]
         })).toBe(
-            '{"type":"ENTRIES","entries":[{"id":1,"username":"alice"},{"id":2,"username":"bob"}]}'
+            '{"type":"ENTRIES","entries":[{"id":"1","username":"alice"},{"id":"2","username":"bob"}]}'
         );
     });
 

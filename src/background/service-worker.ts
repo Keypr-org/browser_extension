@@ -112,7 +112,7 @@ async function handleLoginFieldsDetected(from: string, sender: chrome.runtime.Me
 
     console.log("Login fields found!");
 
-    globEntries = getEntries(url);    
+    globEntries = await getEntries(url);
 
     if (globEntries === undefined) {
         console.error("No entries found exiting 'getEntries'");
@@ -148,7 +148,7 @@ async function handleGetPassword(message: GetPasswordMessage, sender: chrome.run
         return;
     }
 
-    const pw = getPassword(message.id);
+    const pw = await getPassword(message.id);
 
     if (pw === undefined) {
         console.log("No password found");
@@ -259,18 +259,3 @@ async function getTabInfo(sender: chrome.runtime.MessageSender): Promise<TabInfo
         frameId: frameId
     };
 }
-
-const port = chrome.runtime.connectNative("com.keypr.native");
-
-port.onMessage.addListener((message) => {
-    console.log("Received from Qt:", message);
-});
-
-port.onDisconnect.addListener(() => {
-    console.error("Native host disconnected");
-});
-
-port.postMessage({
-    type: "GET_ENTRIES",
-    url: "https://example.com"
-});

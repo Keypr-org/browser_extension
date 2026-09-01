@@ -50,17 +50,17 @@ export interface GetEntriesMessage {
 
 export interface GetPasswordMessage {
     type: "GET_PASSWORD";
-    id: number;
+    id: string;
 }
 
 export interface Entry {
-    id: number;
+    id: string;
     url: string;
     username: string;
 }
 
 export interface ReceivedEntry {
-    id: number;
+    id: string;
     username: string;
 }
 
