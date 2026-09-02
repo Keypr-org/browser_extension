@@ -41,6 +41,15 @@ describe("native messaging helpers", () => {
         await expect(getEntries("https://example.com/login")).resolves.toBeUndefined();
     });
 
+    it("throws the native error on an error response", async () => {
+        vi.mocked(sendNativeRequest).mockResolvedValue({
+            type: "ERROR",
+            code: "NATIVE_HOST_UNAVAILABLE"
+        });
+
+        await expect(getEntries("https://example.com/login")).rejects.toThrow("NATIVE_HOST_UNAVAILABLE");
+    });
+
     it("getPassword sends the expected request and resolves the password", async () => {
         vi.mocked(sendNativeRequest).mockResolvedValue({
             type: "PASSWORD",
@@ -62,5 +71,14 @@ describe("native messaging helpers", () => {
         });
 
         await expect(getPassword("42")).resolves.toBeUndefined();
+    });
+
+    it("throws the native error on an error response", async () => {
+        vi.mocked(sendNativeRequest).mockResolvedValue({
+            type: "ERROR",
+            code: "ENTRY_NOT_FOUND"
+        });
+
+        await expect(getPassword("42")).rejects.toThrow("ENTRY_NOT_FOUND");
     });
 });

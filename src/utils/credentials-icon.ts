@@ -13,6 +13,11 @@ import { findField } from "./find-field.js";
 let selectedIcon: HTMLButtonElement | undefined;
 
 chrome.runtime.onMessage.addListener((message) => {
+    if (message.type === "ERROR" && message.from === "CREDENTIALS_ICON") {
+        displayError(message.message);
+        return;
+    }
+
     if (message.type !== "ENTRIES" || message.from !== "CREDENTIALS_ICON") {
         return;
     }
@@ -177,6 +182,13 @@ export async function displayEntries(entries: Entry[]): Promise<void> {
 
         entriesContainer.appendChild(button);
     }
+}
+
+/** Displays a native host error in the credentials overlay. */
+export function displayError(message: string): void {
+    const overlay = createOverlay();
+    overlay.textContent = message;
+    overlay.classList.add("keypr-credentials-error");
 }
 
 /**

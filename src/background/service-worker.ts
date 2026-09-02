@@ -7,13 +7,14 @@
 
 import { getEntries, getPassword } from "../utils/native-messaging.js";
 import type { GetEntriesMessage,
-    TabInfo, GetPasswordMessage, FillCredentialsMessage, FrameLoginFields, ReceivedEntry} from "../utils/messages.js";
+    TabInfo, GetPasswordMessage, FillCredentialsMessage, FrameLoginFields,
+    LoginFieldsDetectedMessage, ReceivedEntry} from "../utils/messages.js";
 
 /** Map storing detected login field locations indexed by tab and frame IDs */
 const loginLocations = new Map<string, FrameLoginFields>();
 
-/** Cached entries retrieved from native host */
-let globEntries: ReceivedEntry[] | undefined;
+/** Cached entries retrieved from native host, keyed by tab and frame */
+const entriesByLocation = new Map<string, ReceivedEntry[]>();
 
 /**
  * Creates a unique key for a tab and frame combination
@@ -39,7 +40,7 @@ chrome.tabs.onActivated.addListener(async ({ tabId }) => {
     await handleGetEntries({
         type: "GET_ENTRIES",
         url
-    });
+    }).catch(console.error);
 });
 
 chrome.tabs.onUpdated.addListener((tabId, changeInfo) => {
@@ -50,6 +51,7 @@ chrome.tabs.onUpdated.addListener((tabId, changeInfo) => {
     for (const key of loginLocations.keys()) {
         if (key.startsWith(`${tabId}:`)) {
             loginLocations.delete(key);
+            entriesByLocation.delete(key);
         }
     }
 });
@@ -58,29 +60,35 @@ chrome.tabs.onRemoved.addListener((tabId) => {
     for (const key of loginLocations.keys()) {
         if (key.startsWith(`${tabId}:`)) {
             loginLocations.delete(key);
+            entriesByLocation.delete(key);
         }
     }
 });
 
-chrome.runtime.onMessage.addListener(async (message, sender) => {
+chrome.runtime.onMessage.addListener((message, sender) => {
     if (message.type === "GET_ENTRIES") {
-        await handleGetEntries(message);
+        void handleGetEntries(message).catch(console.error);
     } else if (message.type === "LOGIN_FIELDS_DETECTED") {
-        const tabInfo = await getTabInfo(sender);
-        if (tabInfo === undefined) {
-            return;
-        }
-
-        loginLocations.set(locationKey(tabInfo.tabId, tabInfo.frameId), {
-            tab: tabInfo,
-            fields: message.fields
-        });
+        void handleLoginFieldsMessage(message.fields, sender).catch(console.error);
     } else if (message.type === "SHOW_CREDENTIALS") {
-        await handleLoginFieldsDetected(message.from, sender);
+        void handleLoginFieldsDetected(message.from, sender).catch(console.error);
     } else if (message.type === "GET_PASSWORD") {
-        await handleGetPassword(message, sender);
+        void handleGetPassword(message, sender).catch(console.error);
     }
 });
+
+async function handleLoginFieldsMessage(fields: LoginFieldsDetectedMessage["fields"],
+    sender: chrome.runtime.MessageSender): Promise<void> {
+    const tabInfo = await getTabInfo(sender);
+    if (tabInfo === undefined) {
+        return;
+    }
+
+    loginLocations.set(locationKey(tabInfo.tabId, tabInfo.frameId), {
+        tab: tabInfo,
+        fields
+    });
+}
 
 /**
  * Handles GET_ENTRIES message by requesting login field detection from content script
@@ -93,7 +101,7 @@ async function handleGetEntries(message: GetEntriesMessage): Promise<void> {
         currentWindow: true
     });
 
-    if (tab.id === undefined) {
+    if (tab?.id === undefined) {
         console.log("No tab ID available");
         return;
     }
@@ -139,17 +147,21 @@ async function handleLoginFieldsDetected(from: string, sender: chrome.runtime.Me
 
     console.log("Login fields found!");
 
-    globEntries = await getEntries(url);
-
-    if (globEntries === undefined) {
-        console.error("No entries found exiting 'getEntries'");
+    const entriesKey = locationKey(loginLocation.tab.tabId, loginLocation.tab.frameId);
+    let entries: ReceivedEntry[];
+    try {
+        entries = await getEntries(url) ?? [];
+    } catch (error) {
+        await sendError(from, sender, error);
         return;
-    } 
+    }
+
+    entriesByLocation.set(entriesKey, entries);
 
     await sendEntries({
         type: "ENTRIES",
         from,
-        entries: globEntries
+        entries
     }, sender);
 }
 
@@ -173,6 +185,22 @@ async function sendEntries(message: { type: "ENTRIES"; from: string; entries: Re
     });
 }
 
+/** Sends a native host error to the popup or content script that made the request. */
+async function sendError(from: string, sender: chrome.runtime.MessageSender, error: unknown): Promise<void> {
+    const errorMessage = error instanceof Error ? error.message : "Unknown native host error";
+    const message = { type: "ERROR", from, message: errorMessage };
+    const tabId = sender.tab?.id;
+
+    if (tabId !== undefined && sender.frameId !== undefined) {
+        await sendTabMessage(tabId, message, { frameId: sender.frameId });
+        return;
+    }
+
+    await chrome.runtime.sendMessage(message).catch(() => {
+        console.log("No popup is open to receive the error");
+    });
+}
+
 /**
  * Handles password retrieval request and sends credentials to fill form fields
  * @param message The GET_PASSWORD message with entry ID
@@ -187,19 +215,28 @@ async function handleGetPassword(message: GetPasswordMessage, sender: chrome.run
         return;
     }
 
-    const pw = await getPassword(message.id);
+    let pw: string | undefined;
+    try {
+        pw = await getPassword(message.id);
+    } catch (error) {
+        const from = sender.tab?.id !== undefined ? "CREDENTIALS_ICON" : "POPUP";
+        await sendError(from, sender, error);
+        return;
+    }
 
     if (pw === undefined) {
         console.log("No password found");
         return;
     }
 
-    if (globEntries === undefined) {
-        console.error("globEntries is undefined inside of handleGetPassword");
+    const entriesKey = locationKey(loginLocation.tab.tabId, loginLocation.tab.frameId);
+    const entries = entriesByLocation.get(entriesKey);
+    if (entries === undefined) {
+        console.error("No cached entries for the requested location");
         return;
-    } 
+    }
 
-    const entry = globEntries.find((entry) => entry.id === message.id);
+    const entry = entries.find((entry) => entry.id === message.id);
 
     if (entry === undefined) {
         console.error("No entry for the requested entry");
@@ -272,7 +309,7 @@ async function getLoginLocation(sender: chrome.runtime.MessageSender): Promise<F
         currentWindow: true
     });
 
-    if (tab.id === undefined) {
+    if (tab?.id === undefined) {
         return undefined;
     }
 
@@ -296,7 +333,12 @@ async function getTabInfo(sender: chrome.runtime.MessageSender): Promise<TabInfo
         return;
     }
     
-    const tab = await chrome.tabs.get(tabId);
+    const tab = await chrome.tabs.get(tabId).catch(() => undefined);
+
+    if (tab === undefined) {
+        console.log("Tab is no longer available");
+        return;
+    }
 
     // Get URL
     const url = tab.url;

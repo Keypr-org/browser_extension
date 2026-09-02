@@ -15,6 +15,15 @@ const REQUEST_TIMEOUT_MS = 5000;
 
 /** Persistent connection to the native host */
 let port: chrome.runtime.Port | undefined;
+let requestQueue = Promise.resolve();
+
+function getDisconnectError(): { message: string } | undefined {
+    const runtime = chrome.runtime as typeof chrome.runtime & {
+        lastError?: { message: string };
+    };
+
+    return runtime.lastError;
+}
 
 /**
  * Gets or creates a connection to the native host
@@ -28,7 +37,10 @@ function getPort(): chrome.runtime.Port {
     const newPort = chrome.runtime.connectNative(NATIVE_HOST_NAME);
 
     newPort.onDisconnect.addListener(() => {
-        console.error("Native host disconnected");
+        const disconnectError = getDisconnectError();
+        if (disconnectError !== undefined) {
+            console.error("Native host disconnected:", disconnectError.message);
+        }
         port = undefined;
     });
 
@@ -45,26 +57,44 @@ function getPort(): chrome.runtime.Port {
  * @throws Error if request times out or communication fails
  */
 export function sendNativeRequest(message: NativeMessage): Promise<NativeMessage> {
+    const request = requestQueue.then(() => sendQueuedNativeRequest(message));
+    requestQueue = request.then(() => undefined, () => undefined);
+    return request;
+}
+
+function sendQueuedNativeRequest(message: NativeMessage): Promise<NativeMessage> {
     return new Promise((resolve, reject) => {
         const activePort = getPort();
 
         const timer = setTimeout(() => {
+            activePort.onDisconnect.removeListener(onDisconnect);
             activePort.onMessage.removeListener(onMessage);
             reject(new Error("Native messaging request timed out"));
         }, REQUEST_TIMEOUT_MS);
 
+        function onDisconnect(): void {
+            const disconnectError = getDisconnectError();
+            clearTimeout(timer);
+            activePort.onDisconnect.removeListener(onDisconnect);
+            activePort.onMessage.removeListener(onMessage);
+            reject(new Error(disconnectError?.message ?? "Native host disconnected"));
+        }
+
         function onMessage(response: NativeMessage): void {
             clearTimeout(timer);
+            activePort.onDisconnect.removeListener(onDisconnect);
             activePort.onMessage.removeListener(onMessage);
             resolve(response);
         }
 
+        activePort.onDisconnect.addListener(onDisconnect);
         activePort.onMessage.addListener(onMessage);
 
         try {
             activePort.postMessage(message);
         } catch (error) {
             clearTimeout(timer);
+            activePort.onDisconnect.removeListener(onDisconnect);
             activePort.onMessage.removeListener(onMessage);
             reject(error);
         }

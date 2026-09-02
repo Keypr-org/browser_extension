@@ -7,11 +7,16 @@
 
 import { displayEntries } from "../utils/credentials-icon.js";
 
+const errorElement = document.querySelector<HTMLDivElement>("#error");
+
 chrome.runtime.onMessage.addListener((message) => {
     if (message.type !== "ENTRIES" || message.from !== "POPUP") {
+        if (message.type === "ERROR" && message.from === "POPUP" && errorElement !== null) {
+            errorElement.textContent = message.message;
+            errorElement.hidden = false;
+        }
         return;
     }
-    console.log("I AM POPUP");
 
     displayEntries(message.entries);
 });

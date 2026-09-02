@@ -18,6 +18,11 @@ export async function getEntries(url: string): Promise<ReceivedEntry[] | undefin
 
     const response = await sendNativeRequest(request);
 
+    if (response.type === "ERROR") {
+        console.error("Native host returned an error when asking for entries:", response.code);
+        throw new Error(response.code);
+    }
+
     if (response.type !== "ENTRIES") {
         console.error("Received wrong message type when asking for entries:", response.type);
         return undefined;
@@ -35,6 +40,11 @@ export async function getPassword(id: string): Promise<string | undefined> {
     const request: GetPasswordMessage = { type: "GET_PASSWORD", id };
 
     const response = await sendNativeRequest(request);
+
+    if (response.type === "ERROR") {
+        console.error("Native host returned an error when asking for password:", response.code);
+        throw new Error(response.code);
+    }
 
     if (response.type !== "PASSWORD") {
         console.error("Received wrong message type when asking for password:", response.type);

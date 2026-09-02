@@ -7,6 +7,8 @@
 
 import type { LoginFieldsDetectedMessage, FieldDescriptor, LoginFields } from "../utils/messages.js";
 
+const MIN_USERNAME_SCORE = 30;
+
 /**
  * Finds a password input field on the page
  * @return The first enabled, non-readonly password field found, or undefined if none exists
@@ -19,8 +21,25 @@ function findPasswordField(): HTMLInputElement | undefined {
     );
 
     return passwordFields.find(
-        (field) => !field.disabled && !field.readOnly
+        (field) => !field.disabled && !field.readOnly && isVisible(field)
     );
+}
+
+function isVisible(field: HTMLInputElement): boolean {
+    if (field.type === "hidden" || field.hidden) {
+        return false;
+    }
+
+    let element: HTMLElement | null = field;
+    while (element !== null) {
+        const style = window.getComputedStyle(element);
+        if (style.display === "none" || style.visibility === "hidden" || style.visibility === "collapse") {
+            return false;
+        }
+        element = element.parentElement;
+    }
+
+    return true;
 }
 
 /**
@@ -94,11 +113,11 @@ function findUsernameField(): HTMLInputElement | undefined {
             'input:not([type="password"])'
         )
     ).filter(
-        (field) => !field.disabled && !field.readOnly
+        (field) => !field.disabled && !field.readOnly && isVisible(field)
     );
 
     let bestField: HTMLInputElement | undefined;
-    let bestScore = 0;
+    let bestScore = MIN_USERNAME_SCORE;
 
     for (const field of fields) {
         const score = scoreUsernameField(field);
