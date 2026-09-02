@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { fillCredentials } from "../../src/utils/fill-credentials.js";
+import { fillCredentials } from "../../src/content/fill-credentials.js";
 import type { FieldDescriptor } from "../../src/utils/messages.js";
 
 const descriptor = (overrides: Partial<FieldDescriptor> = {}): FieldDescriptor => ({
