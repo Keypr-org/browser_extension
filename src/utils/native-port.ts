@@ -1,10 +1,25 @@
+/**
+ * @file Native Port Communication Module
+ * @brief Low-level native messaging port management and request handling
+ * @details Manages a persistent connection to the native host application using Chrome's
+ * native messaging API. Handles request-response correlation with timeouts and error handling.
+ */
+
 import type { NativeMessage } from "./messages.js";
 
+/** Name of the native messaging host as specified in the manifest */
 const NATIVE_HOST_NAME = "com.keypr.native";
+
+/** Timeout in milliseconds for native host requests */
 const REQUEST_TIMEOUT_MS = 5000;
 
+/** Persistent connection to the native host */
 let port: chrome.runtime.Port | undefined;
 
+/**
+ * Gets or creates a connection to the native host
+ * @return The chrome.runtime.Port for communicating with the native host
+ */
 function getPort(): chrome.runtime.Port {
     if (port !== undefined) {
         return port;
@@ -21,8 +36,14 @@ function getPort(): chrome.runtime.Port {
     return newPort;
 }
 
-// Native Messaging is a single stdio pipe: requests and responses aren't correlated
-// by an id, so callers must await one response before sending the next request.
+/**
+ * Sends a message to the native host and waits for a response with timeout
+ * @details Note: Native Messaging uses a single stdio pipe, so requests and responses
+ * are not correlated by ID. Callers must await one response before sending the next request.
+ * @param message The NativeMessage to send
+ * @return Promise resolving to the NativeMessage response from the native host
+ * @throws Error if request times out or communication fails
+ */
 export function sendNativeRequest(message: NativeMessage): Promise<NativeMessage> {
     return new Promise((resolve, reject) => {
         const activePort = getPort();

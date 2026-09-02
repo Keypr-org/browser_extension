@@ -1,7 +1,15 @@
+/**
+ * @file Credentials Icon and Display Module
+ * @brief Manages credential icon overlay and credentials display popup
+ * @details Creates clickable icons on login fields, handles credential selection,
+ * and displays an overlay popup with available credentials formatted for easy viewing.
+ */
+
 import { Entry } from "../utils/messages.js";
 import type { LoginFieldsDetectedMessage} from "./messages.js";
 import { findField } from "./find-field.js";
 
+/** Stores reference to the currently selected credential icon button */
 let selectedIcon: HTMLButtonElement | undefined;
 
 chrome.runtime.onMessage.addListener((message) => {
@@ -13,6 +21,11 @@ chrome.runtime.onMessage.addListener((message) => {
     displayEntries(message.entries);
 });
 
+/**
+ * Adds credential icons to detected username and password fields
+ * @param login The LoginFieldsDetectedMessage containing field descriptors
+ * @return void
+ */
 export function addCredentialIcon(login: LoginFieldsDetectedMessage): void {
     if (login.fields.username) {
         const usernameField = findField(login.fields.username);
@@ -29,6 +42,12 @@ export function addCredentialIcon(login: LoginFieldsDetectedMessage): void {
     }
 }
 
+/**
+ * Adds a single credential icon button to an input field
+ * @param field The HTMLInputElement to attach the icon to
+ * @param name The field type name ("username" or "password") for CSS styling
+ * @return void
+ */
 function addOneCredentialIcon(field: HTMLInputElement, name: string): void {
     if (field.dataset.keyprCredentialIcon === "true") {
         return;
@@ -85,6 +104,12 @@ function addOneCredentialIcon(field: HTMLInputElement, name: string): void {
     });
 }
 
+/**
+ * Positions a credential icon relative to its associated input field
+ * @param icon The credential icon button element to position
+ * @param field The associated HTMLInputElement
+ * @return void
+ */
 function positionCredentialIcon(icon: HTMLButtonElement, field: HTMLInputElement): void {
     const rect = field.getBoundingClientRect();
 
@@ -92,6 +117,11 @@ function positionCredentialIcon(icon: HTMLButtonElement, field: HTMLInputElement
     icon.style.top = `${window.scrollY + rect.top + (rect.height - 24) / 2}px`;
 }
 
+/**
+ * Displays available credentials in an overlay popup
+ * @param entries Array of Entry objects containing credential information
+ * @return Promise that resolves after entries are displayed
+ */
 export async function displayEntries(entries: Entry[]): Promise<void> {
     const container = document.getElementById("entries");
 
@@ -149,6 +179,10 @@ export async function displayEntries(entries: Entry[]): Promise<void> {
     }
 }
 
+/**
+ * Creates or retrieves the credentials overlay element
+ * @return The HTMLDivElement containing the credentials overlay
+ */
 function createOverlay(): HTMLDivElement {
     const existingOverlay = document.getElementById(
         "keypr-credentials-overlay"

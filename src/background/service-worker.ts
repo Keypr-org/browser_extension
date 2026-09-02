@@ -1,10 +1,26 @@
+/**
+ * @file Service Worker for Browser Extension
+ * @brief Main background service worker handling browser events and message routing
+ * @details Manages tab lifecycle events, coordinates between content scripts and native host,
+ * handles login field detection, credential retrieval, and credential filling across tabs and frames.
+ */
+
 import { getEntries, getPassword } from "../utils/native-messaging.js";
 import type { GetEntriesMessage,
     TabInfo, GetPasswordMessage, FillCredentialsMessage, FrameLoginFields, ReceivedEntry} from "../utils/messages.js";
 
+/** Map storing detected login field locations indexed by tab and frame IDs */
 const loginLocations = new Map<string, FrameLoginFields>();
+
+/** Cached entries retrieved from native host */
 let globEntries: ReceivedEntry[] | undefined;
 
+/**
+ * Creates a unique key for a tab and frame combination
+ * @param tabId The browser tab ID
+ * @param frameId The frame ID within the tab
+ * @return A string key combining tab and frame IDs
+ */
 function locationKey(tabId: number, frameId: number): string {
     return `${tabId}:${frameId}`;
 }
@@ -66,6 +82,11 @@ chrome.runtime.onMessage.addListener(async (message, sender) => {
     }
 });
 
+/**
+ * Handles GET_ENTRIES message by requesting login field detection from content script
+ * @param message The GET_ENTRIES message containing the current URL
+ * @return Promise that resolves when the detection request is sent
+ */
 async function handleGetEntries(message: GetEntriesMessage): Promise<void> {
     const [tab] = await chrome.tabs.query({
         active: true,
@@ -84,6 +105,12 @@ async function handleGetEntries(message: GetEntriesMessage): Promise<void> {
     });
 }
 
+/**
+ * Handles credentials display request by retrieving entries for the detected login location
+ * @param from The source identifier (POPUP or CREDENTIALS_ICON)
+ * @param sender The message sender information including tab and frame ID
+ * @return Promise that resolves after entries are sent
+ */
 async function handleLoginFieldsDetected(from: string, sender: chrome.runtime.MessageSender): Promise<void> {
     const loginLocation = await getLoginLocation(sender);
 
@@ -126,6 +153,12 @@ async function handleLoginFieldsDetected(from: string, sender: chrome.runtime.Me
     }, sender);
 }
 
+/**
+ * Sends entries message to the appropriate content script or popup
+ * @param message The ENTRIES message containing credential entries
+ * @param sender The original message sender information
+ * @return Promise that resolves after the message is sent
+ */
 async function sendEntries(message: { type: "ENTRIES"; from: string; entries: ReceivedEntry[] },
     sender: chrome.runtime.MessageSender): Promise<void> {
     const tabId = sender.tab?.id;
@@ -140,6 +173,12 @@ async function sendEntries(message: { type: "ENTRIES"; from: string; entries: Re
     });
 }
 
+/**
+ * Handles password retrieval request and sends credentials to fill form fields
+ * @param message The GET_PASSWORD message with entry ID
+ * @param sender The message sender information
+ * @return Promise that resolves after credentials are sent for filling
+ */
 async function handleGetPassword(message: GetPasswordMessage, sender: chrome.runtime.MessageSender): Promise<void> {
     const loginLocation = await getLoginLocation(sender);
 
@@ -189,6 +228,13 @@ async function handleGetPassword(message: GetPasswordMessage, sender: chrome.run
     );
 }
 
+/**
+ * Sends a message to a specific tab, optionally targeting a specific frame
+ * @param tabId The target tab ID
+ * @param message The message object to send
+ * @param options Optional configuration including frameId for targeted frame delivery
+ * @return Promise that resolves when message is sent (catches delivery failures)
+ */
 async function sendTabMessage(tabId: number, message: object,
     options?: { frameId?: number }): Promise<void> {
     try {
@@ -198,10 +244,20 @@ async function sendTabMessage(tabId: number, message: object,
     }
 }
 
+/**
+ * Checks if a page URL is supported (HTTP/HTTPS)
+ * @param url The page URL to check
+ * @return True if URL starts with http:// or https://, false otherwise
+ */
 function isSupportedPage(url: string): boolean {
     return url.startsWith("http://") || url.startsWith("https://");
 }
 
+/**
+ * Retrieves the login location (tab and fields) associated with a message sender
+ * @param sender The message sender containing tab and frame information
+ * @return Promise resolving to FrameLoginFields if found, undefined otherwise
+ */
 async function getLoginLocation(sender: chrome.runtime.MessageSender): Promise<FrameLoginFields | undefined> {
     const senderTabId = sender.tab?.id;
 
@@ -227,6 +283,11 @@ async function getLoginLocation(sender: chrome.runtime.MessageSender): Promise<F
     );
 }
 
+/**
+ * Extracts and validates tab information from a message sender
+ * @param sender The message sender object from Chrome runtime
+ * @return Promise resolving to TabInfo with tab ID, URL, and frame ID, or undefined if incomplete
+ */
 async function getTabInfo(sender: chrome.runtime.MessageSender): Promise<TabInfo | undefined> {
     // Get tab
     const tabId = sender.tab?.id;

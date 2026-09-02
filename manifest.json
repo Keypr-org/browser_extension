@@ -30,7 +30,6 @@
         "http://*/*"
     ],
     "permissions": [
-        "scripting",
         "nativeMessaging"
     ],
     "action": {

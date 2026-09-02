@@ -1,7 +1,18 @@
+/**
+ * @file Content Script Entry Point
+ * @brief Main entry point for content script execution
+ * @details Sets up login field detection with a MutationObserver and establishes communication
+ * with the service worker for login field detection and credential filling.
+ */
+
 import { createMessageLoginField } from "./login-fields.js";
 import { addCredentialIcon } from "../utils/credentials-icon.js";
 import { fillCredentials } from "./fill-credentials.js";
 
+/**
+ * Detects login fields on the page and sends detection message to service worker
+ * @return void
+ */
 function detectLoginFields(): void {
     const message = createMessageLoginField();
 
@@ -14,6 +25,9 @@ function detectLoginFields(): void {
     }
 }
 
+/**
+ * MutationObserver watching for changes to the DOM to detect login field mutations
+ */
 const observer = new MutationObserver(() => {
     detectLoginFields();
 });
