@@ -11,6 +11,10 @@ import { findField } from "./find-field.js";
 
 /** Stores reference to the currently selected credential icon button */
 let selectedIcon: HTMLButtonElement | undefined;
+const credentialIcons = new Map<HTMLInputElement, {
+    icon: HTMLButtonElement;
+    name: string;
+}>();
 
 chrome.runtime.onMessage.addListener((message) => {
     if (message.type === "ERROR" && message.from === "CREDENTIALS_ICON") {
@@ -32,9 +36,12 @@ chrome.runtime.onMessage.addListener((message) => {
  * @return void
  */
 export function addCredentialIcon(login: LoginFieldsDetectedMessage): void {
+    const detectedFields = new Set<HTMLInputElement>();
+
     if (login.fields.username) {
         const usernameField = findField(login.fields.username);
         if (usernameField) {
+            detectedFields.add(usernameField);
             addOneCredentialIcon(usernameField, "username");
         }
     }
@@ -42,7 +49,20 @@ export function addCredentialIcon(login: LoginFieldsDetectedMessage): void {
     if (login.fields.password) {
         const passwordField = findField(login.fields.password);
         if (passwordField) {
+            detectedFields.add(passwordField);
             addOneCredentialIcon(passwordField, "password");
+        }
+    }
+
+    for (const [field, credential] of credentialIcons) {
+        if (!detectedFields.has(field) || !field.isConnected) {
+            credential.icon.remove();
+            field.dataset.keyprCredentialIcon = "false";
+            credentialIcons.delete(field);
+
+            if (selectedIcon === credential.icon) {
+                selectedIcon = undefined;
+            }
         }
     }
 }
@@ -54,9 +74,12 @@ export function addCredentialIcon(login: LoginFieldsDetectedMessage): void {
  * @return void
  */
 function addOneCredentialIcon(field: HTMLInputElement, name: string): void {
-    if (field.dataset.keyprCredentialIcon === "true") {
+    const existingCredential = credentialIcons.get(field);
+    if (existingCredential?.name === name && existingCredential.icon.isConnected) {
         return;
     }
+
+    existingCredential?.icon.remove();
 
     field.dataset.keyprCredentialIcon = "true";
 
@@ -88,6 +111,7 @@ function addOneCredentialIcon(field: HTMLInputElement, name: string): void {
     iconImage.style.height = "24px";
 
     document.body.appendChild(icon);
+    credentialIcons.set(field, { icon, name });
 
     positionCredentialIcon(icon, field);
 

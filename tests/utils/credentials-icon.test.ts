@@ -82,6 +82,35 @@ describe("credentials icon behavior", () => {
         expect(document.querySelectorAll("button.keypr-credential-icon-username")).toHaveLength(1);
     });
 
+    it("removes the icon when the field is no longer detected", () => {
+        document.body.innerHTML = `
+            <input id="username" type="text" autocomplete="username" />
+        `;
+
+        const field = document.getElementById("username");
+        addCredentialIcon({
+            type: "LOGIN_FIELDS_DETECTED",
+            fields: {
+                username: {
+                    type: "text",
+                    class: "",
+                    name: "",
+                    placeholder: "",
+                    id: "username",
+                    autocomplete: "username"
+                }
+            }
+        });
+
+        field?.remove();
+        addCredentialIcon({
+            type: "LOGIN_FIELDS_DETECTED",
+            fields: {}
+        });
+
+        expect(document.querySelector("button.keypr-credential-icon-username")).toBeNull();
+    });
+
     it("creates the overlay and displays available credentials", async () => {
         await displayEntries([
             { id: "1", url: "https://example.com/login", username: "alice" },

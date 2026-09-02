@@ -81,6 +81,7 @@ observer.observe(document, {
     attributes: true,
     attributeFilter: [
         "autocomplete",
+        "aria-hidden",
         "class",
         "disabled",
         "hidden",

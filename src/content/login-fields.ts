@@ -32,6 +32,10 @@ function isVisible(field: HTMLInputElement): boolean {
 
     let element: HTMLElement | null = field;
     while (element !== null) {
+        if (element.getAttribute("aria-hidden") === "true") {
+            return false;
+        }
+
         const style = window.getComputedStyle(element);
         if (style.display === "none" || style.visibility === "hidden" || style.visibility === "collapse") {
             return false;

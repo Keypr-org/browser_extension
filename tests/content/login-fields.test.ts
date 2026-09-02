@@ -193,6 +193,34 @@ describe("findLoginFields", () => {
         expect(fields.password).toBeUndefined();
     });
 
+    it("does not select fields marked with aria-hidden true", () => {
+        document.body.innerHTML = `
+            <form>
+                <input type="text" name="username" aria-hidden="true">
+                <input type="password" aria-hidden="true">
+            </form>
+        `;
+
+        const fields = findLoginFields();
+
+        expect(fields.username).toBeUndefined();
+        expect(fields.password).toBeUndefined();
+    });
+
+    it("does not select fields inside aria-hidden containers", () => {
+        document.body.innerHTML = `
+            <form aria-hidden="true">
+                <input type="text" name="username">
+                <input type="password">
+            </form>
+        `;
+
+        const fields = findLoginFields();
+
+        expect(fields.username).toBeUndefined();
+        expect(fields.password).toBeUndefined();
+    });
+
     it("does not select fields inside hidden containers", () => {
         document.body.innerHTML = `
             <form style="display: none">
