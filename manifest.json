@@ -3,19 +3,36 @@
     "name": "Keypr",
     "version": "0.1.0",
     "description": "Extension Chrome pour notre gestionnaire de mots de passe",
-    "background": {
-        "service_worker": "background/service-worker.js"
+    "key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAsijMcRLmeD2+U5VESIrjC020pBVBgJu2V69nveI8RBuWC3/1XMRyncw7/qEboQ5WZXO0B+S8llo1Y6Hxe5miOH3vPJonttBoZvkesfaasc5gGn/wD6JMRW/UZS8J0tqGtUTsGpnW/NhloXxGeBWsiQX5tsSDsjBsE2KVQqLFQ4AneP2WxiEZSDrBy62j9ZopE4Hth7kerCwjcGF18uKRjF/XmQXzD9HPGSzfpauKhGalBAuFpCNIFAz1yKgY9stEZpfUqm8s6pA6DtCq98Xx2uetEWjQdfwAB66d1zJHNgxRtIGu0l8YpAQSDlvwybqjcmXS4ebmlHfBGJt8CWwMMwIDAQAB",
+    "icons": {
+        "16": "img/icons/icon16.png",
+        "32": "img/icons/icon32.png",
+        "48": "img/icons/icon48.png",
+        "128": "img/icons/icon128.png"
     },
-    "content_scripts": [
+    "background": {
+        "service_worker": "background/service-worker.js",
+        "type": "module"
+    },
+    "content_scripts": [{
+        "js": ["content/entry.js"],
+        "matches": ["http://*/*", "https://*/*"],
+        "all_frames": true
+    }],
+    "web_accessible_resources": [
         {
-            "matches": [
-                "http://*/*",
-                "https://*/*"
-            ],
-            "js": [
-                "content/content-script.js"
-            ]
+            "resources": ["img/icons/icon24.png", "img/icons/iconNoBackground32.png", "style/credentials-overlay.css"],
+            "matches": ["http://*/*", "https://*/*"]
         }
     ],
-    "permissions": []
+    "host_permissions": [
+        "https://*/*",
+        "http://*/*"
+    ],
+    "permissions": [
+        "nativeMessaging"
+    ],
+    "action": {
+        "default_popup": "popup/popup.html"
+    }
 }
