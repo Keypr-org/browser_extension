@@ -1,5 +1,18 @@
+/**
+ * @file Login Fields Detection Module
+ * @brief Detects and identifies login form fields on web pages
+ * @details Implements heuristic-based scoring to identify username and password fields
+ * by analyzing HTML attributes like name, id, placeholder, type, and autocomplete.
+ */
+
 import type { LoginFieldsDetectedMessage, FieldDescriptor, LoginFields } from "../utils/messages.js";
 
+const MIN_USERNAME_SCORE = 30;
+
+/**
+ * Finds a password input field on the page
+ * @return The first enabled, non-readonly password field found, or undefined if none exists
+ */
 function findPasswordField(): HTMLInputElement | undefined {
     const passwordFields = Array.from(
         document.querySelectorAll<HTMLInputElement>(
@@ -8,10 +21,36 @@ function findPasswordField(): HTMLInputElement | undefined {
     );
 
     return passwordFields.find(
-        (field) => !field.disabled && !field.readOnly
+        (field) => !field.disabled && !field.readOnly && isVisible(field)
     );
 }
 
+function isVisible(field: HTMLInputElement): boolean {
+    if (field.type === "hidden" || field.hidden) {
+        return false;
+    }
+
+    let element: HTMLElement | null = field;
+    while (element !== null) {
+        if (element.getAttribute("aria-hidden") === "true") {
+            return false;
+        }
+
+        const style = window.getComputedStyle(element);
+        if (style.display === "none" || style.visibility === "hidden" || style.visibility === "collapse") {
+            return false;
+        }
+        element = element.parentElement;
+    }
+
+    return true;
+}
+
+/**
+ * Scores a field's likelihood of being a username/email input based on attributes
+ * @param field The HTMLInputElement to analyze
+ * @return An integer score based on matching attributes (higher = more likely to be username field)
+ */
 function scoreUsernameField(field: HTMLInputElement): number {
     let score = 0;
 
@@ -68,17 +107,21 @@ function scoreUsernameField(field: HTMLInputElement): number {
     return score;
 }
 
+/**
+ * Finds the most likely username field by scoring all text-based input fields
+ * @return The best-scoring username field found, or undefined if none suitable
+ */
 function findUsernameField(): HTMLInputElement | undefined {
     const fields = Array.from(
         document.querySelectorAll<HTMLInputElement>(
             'input:not([type="password"])'
         )
     ).filter(
-        (field) => !field.disabled && !field.readOnly
+        (field) => !field.disabled && !field.readOnly && isVisible(field)
     );
 
     let bestField: HTMLInputElement | undefined;
-    let bestScore = 0;
+    let bestScore = MIN_USERNAME_SCORE;
 
     for (const field of fields) {
         const score = scoreUsernameField(field);
@@ -92,6 +135,10 @@ function findUsernameField(): HTMLInputElement | undefined {
     return bestField;
 }
 
+/**
+ * Detects login fields on the current page
+ * @return LoginFields object containing references to username and password fields
+ */
 export function findLoginFields(): LoginFields {
     return {
         username: findUsernameField(),

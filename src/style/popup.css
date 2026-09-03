@@ -49,6 +49,15 @@ h1 {
     font-weight: 700;
 }
 
+#error {
+    margin: 0 8px 8px;
+    padding: 12px;
+    background: #4a1f29;
+    border: 1px solid #a63d50;
+    border-radius: 8px;
+    color: #ffd7de;
+}
+
 
 /* =========================
    Entries

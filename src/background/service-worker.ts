@@ -1,10 +1,27 @@
-import { getEntries, getPassword } from "../mock/mock-client.js";
+/**
+ * @file Service Worker for Browser Extension
+ * @brief Main background service worker handling browser events and message routing
+ * @details Manages tab lifecycle events, coordinates between content scripts and native host,
+ * handles login field detection, credential retrieval, and credential filling across tabs and frames.
+ */
+
+import { getEntries, getPassword } from "../utils/native-messaging.js";
 import type { GetEntriesMessage,
-    TabInfo, GetPasswordMessage, FillCredentialsMessage, FrameLoginFields, ReceivedEntry} from "../utils/messages.js";
+    TabInfo, GetPasswordMessage, FillCredentialsMessage, FrameLoginFields,
+    LoginFieldsDetectedMessage, ReceivedEntry} from "../utils/messages.js";
 
+/** Map storing detected login field locations indexed by tab and frame IDs */
 const loginLocations = new Map<string, FrameLoginFields>();
-let globEntries: ReceivedEntry[] | undefined;
 
+/** Cached entries retrieved from native host, keyed by tab and frame */
+const entriesByLocation = new Map<string, ReceivedEntry[]>();
+
+/**
+ * Creates a unique key for a tab and frame combination
+ * @param tabId The browser tab ID
+ * @param frameId The frame ID within the tab
+ * @return A string key combining tab and frame IDs
+ */
 function locationKey(tabId: number, frameId: number): string {
     return `${tabId}:${frameId}`;
 }
@@ -23,7 +40,7 @@ chrome.tabs.onActivated.addListener(async ({ tabId }) => {
     await handleGetEntries({
         type: "GET_ENTRIES",
         url
-    });
+    }).catch(console.error);
 });
 
 chrome.tabs.onUpdated.addListener((tabId, changeInfo) => {
@@ -34,6 +51,7 @@ chrome.tabs.onUpdated.addListener((tabId, changeInfo) => {
     for (const key of loginLocations.keys()) {
         if (key.startsWith(`${tabId}:`)) {
             loginLocations.delete(key);
+            entriesByLocation.delete(key);
         }
     }
 });
@@ -42,37 +60,48 @@ chrome.tabs.onRemoved.addListener((tabId) => {
     for (const key of loginLocations.keys()) {
         if (key.startsWith(`${tabId}:`)) {
             loginLocations.delete(key);
+            entriesByLocation.delete(key);
         }
     }
 });
 
-chrome.runtime.onMessage.addListener(async (message, sender) => {
+chrome.runtime.onMessage.addListener((message, sender) => {
     if (message.type === "GET_ENTRIES") {
-        await handleGetEntries(message);
+        void handleGetEntries(message).catch(console.error);
     } else if (message.type === "LOGIN_FIELDS_DETECTED") {
-        const tabInfo = await getTabInfo(sender);
-        if (tabInfo === undefined) {
-            return;
-        }
-
-        loginLocations.set(locationKey(tabInfo.tabId, tabInfo.frameId), {
-            tab: tabInfo,
-            fields: message.fields
-        });
+        void handleLoginFieldsMessage(message.fields, sender).catch(console.error);
     } else if (message.type === "SHOW_CREDENTIALS") {
-        await handleLoginFieldsDetected(message.from, sender);
+        void handleLoginFieldsDetected(message.from, sender).catch(console.error);
     } else if (message.type === "GET_PASSWORD") {
-        await handleGetPassword(message, sender);
+        void handleGetPassword(message, sender).catch(console.error);
     }
 });
 
+async function handleLoginFieldsMessage(fields: LoginFieldsDetectedMessage["fields"],
+    sender: chrome.runtime.MessageSender): Promise<void> {
+    const tabInfo = await getTabInfo(sender);
+    if (tabInfo === undefined) {
+        return;
+    }
+
+    loginLocations.set(locationKey(tabInfo.tabId, tabInfo.frameId), {
+        tab: tabInfo,
+        fields
+    });
+}
+
+/**
+ * Handles GET_ENTRIES message by requesting login field detection from content script
+ * @param message The GET_ENTRIES message containing the current URL
+ * @return Promise that resolves when the detection request is sent
+ */
 async function handleGetEntries(message: GetEntriesMessage): Promise<void> {
     const [tab] = await chrome.tabs.query({
         active: true,
         currentWindow: true
     });
 
-    if (tab.id === undefined) {
+    if (tab?.id === undefined) {
         console.log("No tab ID available");
         return;
     }
@@ -84,6 +113,12 @@ async function handleGetEntries(message: GetEntriesMessage): Promise<void> {
     });
 }
 
+/**
+ * Handles credentials display request by retrieving entries for the detected login location
+ * @param from The source identifier (POPUP or CREDENTIALS_ICON)
+ * @param sender The message sender information including tab and frame ID
+ * @return Promise that resolves after entries are sent
+ */
 async function handleLoginFieldsDetected(from: string, sender: chrome.runtime.MessageSender): Promise<void> {
     const loginLocation = await getLoginLocation(sender);
 
@@ -112,20 +147,30 @@ async function handleLoginFieldsDetected(from: string, sender: chrome.runtime.Me
 
     console.log("Login fields found!");
 
-    globEntries = getEntries(url);    
-
-    if (globEntries === undefined) {
-        console.error("No entries found exiting 'getEntries'");
+    const entriesKey = locationKey(loginLocation.tab.tabId, loginLocation.tab.frameId);
+    let entries: ReceivedEntry[];
+    try {
+        entries = await getEntries(url) ?? [];
+    } catch (error) {
+        await sendError(from, sender, error);
         return;
-    } 
+    }
+
+    entriesByLocation.set(entriesKey, entries);
 
     await sendEntries({
         type: "ENTRIES",
         from,
-        entries: globEntries
+        entries
     }, sender);
 }
 
+/**
+ * Sends entries message to the appropriate content script or popup
+ * @param message The ENTRIES message containing credential entries
+ * @param sender The original message sender information
+ * @return Promise that resolves after the message is sent
+ */
 async function sendEntries(message: { type: "ENTRIES"; from: string; entries: ReceivedEntry[] },
     sender: chrome.runtime.MessageSender): Promise<void> {
     const tabId = sender.tab?.id;
@@ -140,6 +185,28 @@ async function sendEntries(message: { type: "ENTRIES"; from: string; entries: Re
     });
 }
 
+/** Sends a native host error to the popup or content script that made the request. */
+async function sendError(from: string, sender: chrome.runtime.MessageSender, error: unknown): Promise<void> {
+    const errorMessage = error instanceof Error ? error.message : "Unknown native host error";
+    const message = { type: "ERROR", from, message: errorMessage };
+    const tabId = sender.tab?.id;
+
+    if (tabId !== undefined && sender.frameId !== undefined) {
+        await sendTabMessage(tabId, message, { frameId: sender.frameId });
+        return;
+    }
+
+    await chrome.runtime.sendMessage(message).catch(() => {
+        console.log("No popup is open to receive the error");
+    });
+}
+
+/**
+ * Handles password retrieval request and sends credentials to fill form fields
+ * @param message The GET_PASSWORD message with entry ID
+ * @param sender The message sender information
+ * @return Promise that resolves after credentials are sent for filling
+ */
 async function handleGetPassword(message: GetPasswordMessage, sender: chrome.runtime.MessageSender): Promise<void> {
     const loginLocation = await getLoginLocation(sender);
 
@@ -148,19 +215,28 @@ async function handleGetPassword(message: GetPasswordMessage, sender: chrome.run
         return;
     }
 
-    const pw = getPassword(message.id);
+    let pw: string | undefined;
+    try {
+        pw = await getPassword(message.id);
+    } catch (error) {
+        const from = sender.tab?.id !== undefined ? "CREDENTIALS_ICON" : "POPUP";
+        await sendError(from, sender, error);
+        return;
+    }
 
     if (pw === undefined) {
         console.log("No password found");
         return;
     }
 
-    if (globEntries === undefined) {
-        console.error("globEntries is undefined inside of handleGetPassword");
+    const entriesKey = locationKey(loginLocation.tab.tabId, loginLocation.tab.frameId);
+    const entries = entriesByLocation.get(entriesKey);
+    if (entries === undefined) {
+        console.error("No cached entries for the requested location");
         return;
-    } 
+    }
 
-    const entry = globEntries.find((entry) => entry.id === message.id);
+    const entry = entries.find((entry) => entry.id === message.id);
 
     if (entry === undefined) {
         console.error("No entry for the requested entry");
@@ -189,6 +265,13 @@ async function handleGetPassword(message: GetPasswordMessage, sender: chrome.run
     );
 }
 
+/**
+ * Sends a message to a specific tab, optionally targeting a specific frame
+ * @param tabId The target tab ID
+ * @param message The message object to send
+ * @param options Optional configuration including frameId for targeted frame delivery
+ * @return Promise that resolves when message is sent (catches delivery failures)
+ */
 async function sendTabMessage(tabId: number, message: object,
     options?: { frameId?: number }): Promise<void> {
     try {
@@ -198,10 +281,20 @@ async function sendTabMessage(tabId: number, message: object,
     }
 }
 
+/**
+ * Checks if a page URL is supported (HTTP/HTTPS)
+ * @param url The page URL to check
+ * @return True if URL starts with http:// or https://, false otherwise
+ */
 function isSupportedPage(url: string): boolean {
     return url.startsWith("http://") || url.startsWith("https://");
 }
 
+/**
+ * Retrieves the login location (tab and fields) associated with a message sender
+ * @param sender The message sender containing tab and frame information
+ * @return Promise resolving to FrameLoginFields if found, undefined otherwise
+ */
 async function getLoginLocation(sender: chrome.runtime.MessageSender): Promise<FrameLoginFields | undefined> {
     const senderTabId = sender.tab?.id;
 
@@ -216,7 +309,7 @@ async function getLoginLocation(sender: chrome.runtime.MessageSender): Promise<F
         currentWindow: true
     });
 
-    if (tab.id === undefined) {
+    if (tab?.id === undefined) {
         return undefined;
     }
 
@@ -227,6 +320,11 @@ async function getLoginLocation(sender: chrome.runtime.MessageSender): Promise<F
     );
 }
 
+/**
+ * Extracts and validates tab information from a message sender
+ * @param sender The message sender object from Chrome runtime
+ * @return Promise resolving to TabInfo with tab ID, URL, and frame ID, or undefined if incomplete
+ */
 async function getTabInfo(sender: chrome.runtime.MessageSender): Promise<TabInfo | undefined> {
     // Get tab
     const tabId = sender.tab?.id;
@@ -235,7 +333,12 @@ async function getTabInfo(sender: chrome.runtime.MessageSender): Promise<TabInfo
         return;
     }
     
-    const tab = await chrome.tabs.get(tabId);
+    const tab = await chrome.tabs.get(tabId).catch(() => undefined);
+
+    if (tab === undefined) {
+        console.log("Tab is no longer available");
+        return;
+    }
 
     // Get URL
     const url = tab.url;

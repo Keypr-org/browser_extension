@@ -123,6 +123,18 @@ describe("findLoginFields", () => {
         expect(fields.password).toBeUndefined();
     });
 
+    it("does not select a field based only on a weak placeholder hint", () => {
+        document.body.innerHTML = `
+            <form>
+                <input type="text" placeholder="Login">
+            </form>
+        `;
+
+        const fields = findLoginFields();
+
+        expect(fields.username).toBeUndefined();
+    });
+
     it("does not select disabled fields", () => {
         document.body.innerHTML = `
             <form>
@@ -163,6 +175,62 @@ describe("findLoginFields", () => {
     
         const fields = findLoginFields();
     
+        expect(fields.username).toBeUndefined();
+        expect(fields.password).toBeUndefined();
+    });
+
+    it("does not select hidden fields", () => {
+        document.body.innerHTML = `
+            <form>
+                <input type="text" name="username" hidden>
+                <input type="password" hidden>
+            </form>
+        `;
+
+        const fields = findLoginFields();
+
+        expect(fields.username).toBeUndefined();
+        expect(fields.password).toBeUndefined();
+    });
+
+    it("does not select fields marked with aria-hidden true", () => {
+        document.body.innerHTML = `
+            <form>
+                <input type="text" name="username" aria-hidden="true">
+                <input type="password" aria-hidden="true">
+            </form>
+        `;
+
+        const fields = findLoginFields();
+
+        expect(fields.username).toBeUndefined();
+        expect(fields.password).toBeUndefined();
+    });
+
+    it("does not select fields inside aria-hidden containers", () => {
+        document.body.innerHTML = `
+            <form aria-hidden="true">
+                <input type="text" name="username">
+                <input type="password">
+            </form>
+        `;
+
+        const fields = findLoginFields();
+
+        expect(fields.username).toBeUndefined();
+        expect(fields.password).toBeUndefined();
+    });
+
+    it("does not select fields inside hidden containers", () => {
+        document.body.innerHTML = `
+            <form style="display: none">
+                <input type="text" name="username">
+                <input type="password">
+            </form>
+        `;
+
+        const fields = findLoginFields();
+
         expect(fields.username).toBeUndefined();
         expect(fields.password).toBeUndefined();
     });
