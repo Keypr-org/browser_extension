@@ -55,6 +55,22 @@ will not work until the Native Messaging host is installed and configured.
 
 ## Architecture
 
+```mermaid
+flowchart LR
+  Page["Web Page"] <--> ContentScript["Content Script\nfield detection and filling"]
+
+  subgraph Extension["Chrome Extension"]
+    ContentScript
+    Popup["Popup\ncredential selection"]
+    ServiceWorker["Extension Service Worker\nmessage routing and state"]
+  end
+
+  Popup <--> ServiceWorker
+  ContentScript <--> ServiceWorker
+  ServiceWorker <--> NativeHost["Native Messaging Host"]
+  NativeHost <--> QtClient["Keypr Qt Client"]
+```
+
 The source code is organised by Chrome extension runtime context:
 
 - `src/content/entry.ts` is the content-script entry point. It watches page DOM
@@ -73,12 +89,10 @@ The source code is organised by Chrome extension runtime context:
 
 At runtime, the flow is:
 
-1. The content script detects a username or password field and reports its
-	location to the service worker.
+1. The content script detects a username or password field and reports its location to the service worker.
 2. The service worker asks the native host for entries matching the current URL.
 3. The popup or credential icon displays the available entries.
-4. Selecting an entry causes the service worker to request its password and send
-	the credentials to the content script for filling.
+4. Selecting an entry causes the service worker to request its password and send the credentials to the content script for filling.
 
 The build uses TypeScript for type-checking, Vite for the login-fields bundle, and
 copies the manifest, popup, styles, and images into `dist/`.
@@ -114,27 +128,16 @@ publishing an extension.
 
 When a new functionality needs a pipeline check or delivery step:
 
-1. Add or update the relevant automated tests in `tests/` and make sure the check
-	can run non-interactively on Ubuntu.
-2. Add the command to `package.json` when it is a reusable project operation
-	(for example, `npm run typecheck` or `npm run audit`). Prefer an npm script so
-	the same command works locally and in GitHub Actions.
-3. Add a named step in the `test-and-build` job of
-	`.github/workflows/extension-ci.yml`, placing quality gates before packaging
-	and publishing steps.
-4. If the functionality needs files in the packaged extension, update the build
-	scripts and verify that the expected files exist under `dist/` before the ZIP
-	step.
-5. Open a pull request and confirm that the complete workflow passes before
-	merging. For a delivery change, also inspect the generated artifact from the
-	workflow run.
+1. Add or update the relevant automated tests in `tests/` and make sure the check can run non-interactively on Ubuntu.
+2. Add the command to `package.json` when it is a reusable project operation (for example, `npm run typecheck` or `npm run audit`). Prefer an npm script so the same command works locally and in GitHub Actions.
+3. Add a named step in the `test-and-build` job of `.github/workflows/extension-ci.yml`, placing quality gates before packaging and publishing steps.
+4. If the functionality needs files in the packaged extension, update the build scripts and verify that the expected files exist under `dist/` before the ZIP step.
+5. Open a pull request and confirm that the complete workflow passes before merging. For a delivery change, also inspect the generated artifact from the workflow run.
 
 ## Contributing
 
-1. Create a branch from `develop` with a focused name, such as
-	`feat/improved-field-detection` or `fix/popup-error-state`.
-2. Make the smallest change that implements the functionality and add tests for
-	changed behavior. Keep shared message definitions in `src/utils/messages.ts`.
+1. Create a branch from `develop` with a focused name, such as `feat/improved-field-detection` or `fix/popup-error-state`.
+2. Make the smallest change that implements the functionality and add tests for changed behavior. Keep shared message definitions in `src/utils/messages.ts`.
 3. Run the local checks before opening a pull request:
 
 	```bash
@@ -143,8 +146,7 @@ When a new functionality needs a pipeline check or delivery step:
 	npm run build
 	```
 
-4. Describe the behavior change, test coverage, and any Native Messaging or
-	browser setup needed to review it.
+4. Describe the behavior change, test coverage, and any Native Messaging or browser setup needed to review it.
 5. Keep pull requests focused and respond to CI failures before requesting merge.
 
 Do not commit generated `dist/` output or secrets. Preserve the pinned extension
