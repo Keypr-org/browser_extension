@@ -6,6 +6,7 @@
  */
 
 import type { NativeMessage } from "./messages.js";
+import { isNativeMessage } from "./parse-json.js";
 
 /** Name of the native messaging host as specified in the manifest */
 const NATIVE_HOST_NAME = "com.keypr.native";
@@ -80,10 +81,16 @@ function sendQueuedNativeRequest(message: NativeMessage): Promise<NativeMessage>
             reject(new Error(disconnectError?.message ?? "Native host disconnected"));
         }
 
-        function onMessage(response: NativeMessage): void {
+        function onMessage(response: unknown): void {
             clearTimeout(timer);
             activePort.onDisconnect.removeListener(onDisconnect);
             activePort.onMessage.removeListener(onMessage);
+
+            if (!isNativeMessage(response)) {
+                reject(new Error("Invalid response from native host"));
+                return;
+            }
+
             resolve(response);
         }
 
