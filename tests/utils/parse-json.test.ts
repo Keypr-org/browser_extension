@@ -15,10 +15,10 @@ describe("parseJson", () => {
     it("parses a GET_PASSWORD message", () => {
         expect(parseJson(`{
             "type": "GET_PASSWORD",
-            "id": 1
+            "id": "1"
         }`)).toEqual({
             type: "GET_PASSWORD",
-            id: 1
+            id: "1"
         });
     });
 
@@ -27,11 +27,11 @@ describe("parseJson", () => {
             "type": "ENTRIES",
             "entries": [
                 {
-                    "id": 1,
+                    "id": "1",
                     "username": "alice"
                 },
                 {
-                    "id": 2,
+                    "id": "2",
                     "username": "bob"
                 }
             ]
@@ -39,11 +39,11 @@ describe("parseJson", () => {
             type: "ENTRIES",
             entries: [
                 {
-                    id: 1,
+                    id: "1",
                     username: "alice"
                 },
                 {
-                    id: 2,
+                    id: "2",
                     username: "bob"
                 }
             ]
@@ -98,7 +98,7 @@ describe("parseJson", () => {
             "type": "ENTRIES",
             "entries": [
                 {
-                    "id": "wrong",
+                    "id": 123,
                     "username": "alice"
                 }
             ]

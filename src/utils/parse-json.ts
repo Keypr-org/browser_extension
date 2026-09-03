@@ -37,7 +37,7 @@ export function isNativeMessage(value: unknown): value is NativeMessage {
 
         case "GET_PASSWORD":
             return (
-                typeof message.id === "number"
+                typeof message.id === "string"
             );
 
         case "ENTRIES":
@@ -67,7 +67,7 @@ function isEntry(value: unknown): value is ReceivedEntry {
     const entry = value as Record<string, unknown>;
 
     return (
-        typeof entry.id === "number" &&
+        typeof entry.id === "string" &&
         typeof entry.username === "string"
     );
 }
