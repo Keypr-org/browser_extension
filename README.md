@@ -153,6 +153,168 @@ Do not commit generated `dist/` output or secrets. Preserve the pinned extension
 key and coordinate changes to the Qt Native Messaging host when the message
 protocol or extension ID changes.
 
+## Chrome extension publishing
+
+The extension is published to the Chrome Web Store from the `main` branch by the GitHub Actions workflow.
+
+You can find informations about the GitHub actions that update/publish the extension in the [here](https://github.com/wdzeng/chrome-extension). Since the extension is in a state of `Test`, the `token_refresh` will get disabled after 7 days. You can generate a new `token_refresh` by following the instructions (do this if needed and if you have access to `Repository secrets`):
+
+**1. Get your OAuth credentials**
+
+In Google Cloud Console, go to:
+
+```
+Google Auth Platform → Clients
+```
+
+Open your Desktop application OAuth client.
+
+You will need:
+
+```
+CLIENT_ID
+CLIENT_SECRET
+```
+
+Keep these values private.
+
+**2. Make sure your Google account is allowed**
+
+If your OAuth application is in Testing mode:
+
+Go to:
+
+```
+Google Auth Platform → Audience → Test users
+```
+
+Add the Google account that manages your Chrome Web Store developer account.
+
+**3. Authorize the application**
+
+Open the following URL in your browser.
+
+Replace CLIENT_ID with your actual Client ID:
+
+```
+https://accounts.google.com/o/oauth2/v2/auth?client_id=CLIENT_ID&redirect_uri=http://localhost:8080&response_type=code&scope=https://www.googleapis.com/auth/chromewebstore&access_type=offline&prompt=consent
+```
+
+For example:
+
+```
+https://accounts.google.com/o/oauth2/v2/auth?client_id=123456789-abcdef.apps.googleusercontent.com&redirect_uri=http://localhost:8080&response_type=code&scope=https://www.googleapis.com/auth/chromewebstore&access_type=offline&prompt=consent
+```
+
+Sign in with the Google account that manages your Chrome Web Store extension.
+
+Accept the requested permissions.
+
+**4. Get the authorization code**
+
+After authorization, Google will redirect your browser to:
+
+```
+http://localhost:8080/?code=XXXXXXXX
+```
+
+The page may show that it cannot be reached. That's okay.
+
+Look at the browser's address bar and copy the value after:
+
+```
+code=
+```
+
+For example:
+
+```
+http://localhost:8080/?code=4/0Axxxxxxxxxxxxxxxx
+```
+
+Copy only:
+
+```
+4/0Axxxxxxxxxxxxxxxx
+```
+
+This is your authorization code.
+
+**5. Exchange the authorization code for tokens**
+
+Run this command:
+
+```
+curl -X POST https://oauth2.googleapis.com/token \
+  -d "code=YOUR_AUTHORIZATION_CODE" \
+  -d "client_id=YOUR_CLIENT_ID" \
+  -d "client_secret=YOUR_CLIENT_SECRET" \
+  -d "redirect_uri=http://localhost:8080" \
+  -d "grant_type=authorization_code"
+```
+
+Replace:
+
+```
+YOUR_AUTHORIZATION_CODE
+YOUR_CLIENT_ID
+YOUR_CLIENT_SECRET
+```
+
+with your actual values.
+
+You should receive a response similar to:
+
+```
+{
+  "access_token": "ya29....",
+  "expires_in": 3599,
+  "refresh_token": "1//....",
+  "scope": "https://www.googleapis.com/auth/chromewebstore",
+  "token_type": "Bearer"
+}
+```
+
+**6. Save the refresh token**
+
+You need the value of:
+
+```
+"refresh_token": "1//...."
+```
+
+Do not use the access_token.
+
+The access token is temporary. The refresh token is what your GitHub Actions workflow uses to obtain new access tokens.
+
+**7. Update GitHub Secrets**
+
+Go to:
+
+```
+GitHub → Repository → Settings → Secrets and variables → Actions
+```
+
+Set:
+
+```
+CHROME_CLIENT_ID
+CHROME_CLIENT_SECRET
+CHROME_REFRESH_TOKEN
+```
+
+All three must belong to the same OAuth client:
+
+```
+CHROME_CLIENT_ID       → your Desktop OAuth client
+CHROME_CLIENT_SECRET   → the same Desktop OAuth client
+CHROME_REFRESH_TOKEN   → generated using that same client
+```
+
+**8. Test the credentials**
+
+Use the test Chrome Web Store workflow [here](https://github.com/Keypr-org/browser_extension/actions/workflows/check_extension_credentials.yml) and press `Run workflow`, the test should be valid which mean there will not have any issues when merging `develop` to `main`.
+
 ## Use of AI
 
 AI tools were used during development to help with documentation and implementation support. All generated
